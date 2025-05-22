@@ -52,17 +52,18 @@
     },
     "sale_price": {
       "type": "integer",
-      "min": 10000
-    },
-    "discount": {
-      "type": "decimal",
-      "max": 100,
-      "min": 0
+      "min": 10000,
+      "required": true
     },
     "categories": {
       "type": "relation",
       "relation": "oneToMany",
       "target": "api::category.category"
+    },
+    "list_price": {
+      "type": "integer",
+      "min": 10000,
+      "required": true
     }
   }
 }

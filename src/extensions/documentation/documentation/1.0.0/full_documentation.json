@@ -14,7 +14,7 @@
       "name": "Apache 2.0",
       "url": "https://www.apache.org/licenses/LICENSE-2.0.html"
     },
-    "x-generation-date": "2025-04-23T15:27:22.053Z"
+    "x-generation-date": "2025-05-22T17:39:43.161Z"
   },
   "x-strapi-config": {
     "plugins": [
@@ -6770,7 +6770,9 @@
             "required": [
               "name",
               "thumbnail",
-              "description"
+              "description",
+              "sale_price",
+              "list_price"
             ],
             "type": "object",
             "properties": {
@@ -6826,10 +6828,6 @@
               "sale_price": {
                 "type": "integer"
               },
-              "discount": {
-                "type": "number",
-                "format": "float"
-              },
               "categories": {
                 "type": "array",
                 "items": {
@@ -6843,6 +6841,9 @@
                   ],
                   "example": "string or id"
                 }
+              },
+              "list_price": {
+                "type": "integer"
               },
               "locale": {
                 "type": "string"
@@ -6905,7 +6906,9 @@
         "required": [
           "name",
           "thumbnail",
-          "description"
+          "description",
+          "sale_price",
+          "list_price"
         ],
         "properties": {
           "id": {
@@ -7860,10 +7863,6 @@
           "sale_price": {
             "type": "integer"
           },
-          "discount": {
-            "type": "number",
-            "format": "float"
-          },
           "categories": {
             "type": "array",
             "items": {
@@ -7937,6 +7936,9 @@
                 }
               }
             }
+          },
+          "list_price": {
+            "type": "integer"
           },
           "createdAt": {
             "type": "string",
@@ -8274,10 +8276,6 @@
                 "sale_price": {
                   "type": "integer"
                 },
-                "discount": {
-                  "type": "number",
-                  "format": "float"
-                },
                 "categories": {
                   "type": "array",
                   "items": {
@@ -8291,6 +8289,9 @@
                       }
                     }
                   }
+                },
+                "list_price": {
+                  "type": "integer"
                 },
                 "createdAt": {
                   "type": "string",

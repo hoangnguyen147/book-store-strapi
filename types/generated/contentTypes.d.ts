@@ -490,11 +490,11 @@ export interface ApiBookBook extends Struct.CollectionTypeSchema {
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
     description: Schema.Attribute.Text & Schema.Attribute.Required;
-    discount: Schema.Attribute.Decimal &
+    list_price: Schema.Attribute.Integer &
+      Schema.Attribute.Required &
       Schema.Attribute.SetMinMax<
         {
-          max: 100;
-          min: 0;
+          min: 10000;
         },
         number
       >;
@@ -513,6 +513,7 @@ export interface ApiBookBook extends Struct.CollectionTypeSchema {
       > &
       Schema.Attribute.DefaultTo<0>;
     sale_price: Schema.Attribute.Integer &
+      Schema.Attribute.Required &
       Schema.Attribute.SetMinMax<
         {
           min: 10000;
