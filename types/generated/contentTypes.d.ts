@@ -449,6 +449,7 @@ export interface ApiAuthorAuthor extends Struct.CollectionTypeSchema {
   };
   attributes: {
     avatar: Schema.Attribute.Media<'images' | 'files' | 'videos'>;
+    books: Schema.Attribute.Relation<'manyToMany', 'api::book.book'>;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -481,7 +482,7 @@ export interface ApiBookBook extends Struct.CollectionTypeSchema {
   };
   attributes: {
     albums: Schema.Attribute.Media<'images', true>;
-    authors: Schema.Attribute.Relation<'oneToMany', 'api::author.author'>;
+    authors: Schema.Attribute.Relation<'manyToMany', 'api::author.author'>;
     categories: Schema.Attribute.Relation<
       'oneToMany',
       'api::category.category'

@@ -15,11 +15,6 @@
       "type": "string",
       "required": true
     },
-    "authors": {
-      "type": "relation",
-      "relation": "oneToMany",
-      "target": "api::author.author"
-    },
     "thumbnail": {
       "type": "media",
       "multiple": false,
@@ -64,6 +59,12 @@
       "type": "integer",
       "min": 10000,
       "required": true
+    },
+    "authors": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::author.author",
+      "inversedBy": "books"
     }
   }
 }
