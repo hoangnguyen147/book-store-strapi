@@ -36,6 +36,11 @@
       "relation": "manyToMany",
       "target": "api::book.book",
       "mappedBy": "authors"
+    },
+    "tags": {
+      "type": "json",
+      "required": false,
+      "default": []
     }
   }
 }

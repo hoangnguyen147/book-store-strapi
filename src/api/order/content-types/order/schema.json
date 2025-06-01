@@ -1,0 +1,45 @@
+{
+  "kind": "collectionType",
+  "collectionName": "orders",
+  "info": {
+    "singularName": "order",
+    "pluralName": "orders",
+    "displayName": "Order",
+    "description": "Customer orders"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "user": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user"
+    },
+    "books": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::book.book"
+    },
+    "total_amount": {
+      "type": "integer",
+      "required": true,
+      "min": 0
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": ["pending", "confirmed", "shipped", "delivered", "cancelled"],
+      "default": "pending"
+    },
+    "shipping_address": {
+      "type": "text"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "text"
+    }
+  }
+}

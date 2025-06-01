@@ -8,7 +8,7 @@
     "description": ""
   },
   "options": {
-    "draftAndPublish": true
+    "draftAndPublish": false
   },
   "attributes": {
     "name": {
@@ -18,7 +18,7 @@
     "thumbnail": {
       "type": "media",
       "multiple": false,
-      "required": true,
+      "required": false,
       "allowedTypes": [
         "images",
         "files",
@@ -36,7 +36,7 @@
     },
     "description": {
       "type": "text",
-      "required": true
+      "required": false
     },
     "rating": {
       "type": "decimal",
@@ -47,7 +47,7 @@
     },
     "sale_price": {
       "type": "integer",
-      "min": 10000,
+      "min": 0,
       "required": true
     },
     "categories": {
@@ -57,7 +57,7 @@
     },
     "list_price": {
       "type": "integer",
-      "min": 10000,
+      "min": 0,
       "required": true
     },
     "authors": {
@@ -65,6 +65,15 @@
       "relation": "manyToMany",
       "target": "api::author.author",
       "inversedBy": "books"
+    },
+    "tags": {
+      "type": "json",
+      "required": false,
+      "default": []
+    },
+    "thumbnail_url": {
+      "type": "string",
+      "required": false
     }
   }
 }
