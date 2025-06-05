@@ -8,11 +8,11 @@ The Book Store API provides comprehensive endpoints for managing books, authors,
 
 ### 🌐 Swagger UI
 - **Development**: http://localhost:1337/documentation
-- **Production**: https://api.bookstore.com/documentation
+- **Production**: https://calm-health-1bc6166fbc.strapiapp.com//documentation
 
 ### 🔗 Base URLs
 - **Development**: http://localhost:1337/api
-- **Production**: https://api.bookstore.com/api
+- **Production**: https://calm-health-1bc6166fbc.strapiapp.com//api
 
 ## 🔐 Authentication
 
