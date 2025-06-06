@@ -1,0 +1,15 @@
+{
+  "kind": "singleType",
+  "collectionName": "user_managements",
+  "info": {
+    "singularName": "user-management",
+    "pluralName": "user-managements",
+    "displayName": "User Management",
+    "description": "API for managing users with pagination"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {}
+}

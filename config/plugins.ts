@@ -6,7 +6,7 @@ export default () => ({
       info: {
         version: '1.0.0',
         title: 'Book Store API',
-        description: 'API documentation for Book Store application with comprehensive book management, user authentication, and advanced search capabilities.',
+        description: 'API documentation for Book Store application with comprehensive book management, user authentication, and advanced search capabilities.\n\n**Important Note for Strapi v5:**\n- For GET requests: You can use either `id` (number) or `documentId` (24-char alphanumeric string)\n- For PUT/DELETE requests: You MUST use `documentId` (24-char alphanumeric string)\n- Example: GET /api/categories/133 OR /api/categories/o9m182bqf02l0zjrq8weqfwz\n- Example: PUT /api/categories/o9m182bqf02l0zjrq8weqfwz (documentId required)',
         termsOfService: 'https://bookstore.com/terms',
         contact: {
           name: 'Book Store Team',
@@ -22,6 +22,47 @@ export default () => ({
         plugins: ['upload', 'users-permissions'],
         path: '/documentation',
         mutateDocumentation: (generatedDocumentationDraft) => {
+          // Fix Strapi v5 documentId parameters for PUT/DELETE operations
+          const fixDocumentIdParameters = (paths) => {
+            Object.keys(paths).forEach(pathKey => {
+              const pathItem = paths[pathKey];
+
+              // Fix PUT and DELETE operations to use documentId instead of id
+              ['put', 'delete'].forEach(method => {
+                if (pathItem[method] && pathItem[method].parameters) {
+                  pathItem[method].parameters = pathItem[method].parameters.map(param => {
+                    if (param.name === 'id' && param.in === 'path') {
+                      return {
+                        ...param,
+                        name: 'documentId',
+                        description: 'Document ID (alphanumeric string) - required for update/delete operations in Strapi v5',
+                        schema: {
+                          type: 'string',
+                          pattern: '^[a-z0-9]{24}$',
+                          example: 'o9m182bqf02l0zjrq8weqfwz'
+                        }
+                      };
+                    }
+                    return param;
+                  });
+                }
+              });
+
+              // Also update the path pattern for clarity
+              if (pathKey.includes('/{id}')) {
+                const newPathKey = pathKey.replace('/{id}', '/{documentId}');
+                if (newPathKey !== pathKey) {
+                  paths[newPathKey] = pathItem;
+                  delete paths[pathKey];
+                }
+              }
+            });
+          };
+
+          // Apply the fix to all paths
+          if (generatedDocumentationDraft.paths) {
+            fixDocumentIdParameters(generatedDocumentationDraft.paths);
+          }
           // Add custom routes to the documentation
           Object.assign(generatedDocumentationDraft.paths, {
             '/books/trendy': {
@@ -372,6 +413,78 @@ export default () => ({
                 }
               }
             },
+            '/user-management': {
+              get: {
+                tags: ['User Management'],
+                summary: 'Get list of users',
+                description: 'Get paginated list of users with optional filtering',
+                security: [{ bearerAuth: [] }],
+                parameters: [
+                  {
+                    name: 'page',
+                    in: 'query',
+                    required: false,
+                    schema: { type: 'integer', default: 1, minimum: 1 },
+                    description: 'Page number'
+                  },
+                  {
+                    name: 'pageSize',
+                    in: 'query',
+                    required: false,
+                    schema: { type: 'integer', default: 25, minimum: 1, maximum: 100 },
+                    description: 'Number of users per page'
+                  },
+                  {
+                    name: 'search',
+                    in: 'query',
+                    required: false,
+                    schema: { type: 'string' },
+                    description: 'Search in username and email'
+                  },
+                  {
+                    name: 'confirmed',
+                    in: 'query',
+                    required: false,
+                    schema: { type: 'boolean' },
+                    description: 'Filter by confirmed status'
+                  },
+                  {
+                    name: 'blocked',
+                    in: 'query',
+                    required: false,
+                    schema: { type: 'boolean' },
+                    description: 'Filter by blocked status'
+                  }
+                ],
+                responses: {
+                  '200': {
+                    description: 'List of users with pagination',
+                    content: {
+                      'application/json': {
+                        schema: {
+                          type: 'object',
+                          properties: {
+                            data: {
+                              type: 'array',
+                              items: { $ref: '#/components/schemas/User' }
+                            },
+                            meta: {
+                              type: 'object',
+                              properties: {
+                                pagination: { $ref: '#/components/schemas/Pagination' }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  '401': {
+                    description: 'Authentication required'
+                  }
+                }
+              }
+            },
             '/users/me': {
               get: {
                 tags: ['User Profile'],
@@ -454,6 +567,19 @@ export default () => ({
           }
 
           Object.assign(generatedDocumentationDraft.components.schemas, {
+            DocumentIdNote: {
+              type: 'object',
+              description: 'Important: In Strapi v5, use documentId (alphanumeric string) for PUT/DELETE operations, not the numeric id. GET operations accept both.',
+              properties: {
+                id: { type: 'integer', description: 'Numeric ID - use for GET requests only', example: 133 },
+                documentId: {
+                  type: 'string',
+                  pattern: '^[a-z0-9]{24}$',
+                  description: 'Document ID (24-character alphanumeric string) - required for PUT/DELETE requests',
+                  example: 'o9m182bqf02l0zjrq8weqfwz'
+                }
+              }
+            },
             UserStats: {
               type: 'object',
               properties: {
@@ -509,6 +635,15 @@ export default () => ({
                 gender: { type: 'string', enum: ['male', 'female', 'other'], example: 'male' },
                 facebook: { type: 'string', example: 'https://facebook.com/johndoe' },
                 twitter: { type: 'string', example: 'https://twitter.com/johndoe' }
+              }
+            },
+            Pagination: {
+              type: 'object',
+              properties: {
+                page: { type: 'integer', example: 1, description: 'Current page number' },
+                pageSize: { type: 'integer', example: 25, description: 'Number of items per page' },
+                pageCount: { type: 'integer', example: 10, description: 'Total number of pages' },
+                total: { type: 'integer', example: 250, description: 'Total number of items' }
               }
             },
             Order: {
