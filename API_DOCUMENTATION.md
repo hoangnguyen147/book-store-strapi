@@ -12,7 +12,7 @@ The Book Store API provides comprehensive endpoints for managing books, authors,
 
 ### 🔗 Base URLs
 - **Development**: http://localhost:1337/api
-- **Production**: https://calm-health-1bc6166fbc.strapiapp.com//api
+- **Production**: https://calm-health-1bc6166fbc.strapiapp.com/api
 
 ## 🔐 Authentication
 

@@ -673,7 +673,7 @@ export default () => ({
           description: 'Development server',
         },
         {
-          url: 'https://calm-health-1bc6166fbc.strapiapp.com//api',
+          url: 'https://calm-health-1bc6166fbc.strapiapp.com/api',
           description: 'Production server',
         },
       ],
