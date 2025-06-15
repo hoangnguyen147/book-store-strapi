@@ -786,6 +786,171 @@ This endpoint allows you to create a complete order with multiple books and quan
                   }
                 }
               }
+            },
+            '/orders/{id}/print-bill': {
+              get: {
+                tags: ['Order Management'],
+                summary: 'Print order bill as PDF',
+                description: `
+**Download order bill as PDF file**
+
+This endpoint generates and downloads a professional PDF bill/invoice for the specified order.
+
+**Features:**
+- ✅ Professional invoice layout with company header
+- ✅ Complete order details (ID, date, status)
+- ✅ Customer information (name, email, address, phone)
+- ✅ Itemized list of books with quantities and prices
+- ✅ Subtotal and total calculations
+- ✅ Order notes if provided
+- ✅ Automatic PDF download with descriptive filename
+
+**Security:**
+- ✅ Authentication required
+- ✅ Users can only print bills for their own orders
+- ✅ Order ownership verification
+
+**PDF Filename Format:**
+\`bill-order-{order-id}-{date}.pdf\`
+
+**Example:** \`bill-order-123-2025-06-15.pdf\`
+                `,
+                security: [{ bearerAuth: [] }],
+                parameters: [
+                  {
+                    name: 'id',
+                    in: 'path',
+                    required: true,
+                    schema: {
+                      type: 'integer',
+                      minimum: 1
+                    },
+                    description: 'Order ID (numeric ID, not documentId)',
+                    example: 123
+                  }
+                ],
+                responses: {
+                  '200': {
+                    description: 'PDF bill generated and downloaded successfully',
+                    content: {
+                      'application/pdf': {
+                        schema: {
+                          type: 'string',
+                          format: 'binary',
+                          description: 'PDF file containing the order bill/invoice'
+                        }
+                      }
+                    },
+                    headers: {
+                      'Content-Type': {
+                        description: 'MIME type of the response',
+                        schema: {
+                          type: 'string',
+                          example: 'application/pdf'
+                        }
+                      },
+                      'Content-Disposition': {
+                        description: 'Attachment header with filename',
+                        schema: {
+                          type: 'string',
+                          example: 'attachment; filename="bill-order-123-2025-06-15.pdf"'
+                        }
+                      },
+                      'Content-Length': {
+                        description: 'Size of the PDF file in bytes',
+                        schema: {
+                          type: 'string',
+                          example: '25648'
+                        }
+                      }
+                    }
+                  },
+                  '401': {
+                    description: 'Authentication required',
+                    content: {
+                      'application/json': {
+                        schema: {
+                          type: 'object',
+                          properties: {
+                            error: {
+                              type: 'object',
+                              properties: {
+                                message: {
+                                  type: 'string',
+                                  example: 'Authentication required to print bill'
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  '403': {
+                    description: 'Access forbidden - can only print bills for own orders',
+                    content: {
+                      'application/json': {
+                        schema: {
+                          type: 'object',
+                          properties: {
+                            error: {
+                              type: 'object',
+                              properties: {
+                                message: {
+                                  type: 'string',
+                                  example: 'You can only print bills for your own orders'
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  '404': {
+                    description: 'Order not found',
+                    content: {
+                      'application/json': {
+                        schema: {
+                          type: 'object',
+                          properties: {
+                            error: {
+                              type: 'object',
+                              properties: {
+                                message: {
+                                  type: 'string',
+                                  example: 'Order not found'
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  '400': {
+                    description: 'Error generating PDF',
+                    content: {
+                      'application/json': {
+                        schema: {
+                          type: 'object',
+                          properties: {
+                            error: {
+                              type: 'object',
+                              properties: {
+                                message: {
+                                  type: 'string',
+                                  example: 'Error generating bill PDF'
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
             }
           });
 

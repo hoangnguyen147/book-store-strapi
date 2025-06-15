@@ -3,6 +3,7 @@
  */
 
 import { factories } from '@strapi/strapi';
+import PDFDocument from 'pdfkit';
 
 interface OrderItem {
   book_id: number;
@@ -211,5 +212,174 @@ export default factories.createCoreController('api::order.order', ({ strapi }) =
     } catch (error) {
       return ctx.badRequest('Error fetching orders', { error: error.message });
     }
+  },
+
+  /**
+   * Print bill for an order - generates and downloads PDF
+   */
+  async printBill(ctx) {
+    try {
+      const { id } = ctx.params;
+      const userId = ctx.state.user?.id;
+
+      // Authentication check
+      if (!userId) {
+        return ctx.unauthorized('Authentication required to print bill');
+      }
+
+      // Fetch the complete order with all relations
+      const order: any = await strapi.entityService.findOne('api::order.order', id, {
+        populate: {
+          order_items: {
+            populate: {
+              book: {
+                populate: ['thumbnail', 'categories', 'authors']
+              }
+            }
+          },
+          user: true
+        }
+      });
+
+      if (!order) {
+        return ctx.notFound('Order not found');
+      }
+
+      // Check if user owns this order (optional security check)
+      if (order.user?.id !== userId) {
+        return ctx.forbidden('You can only print bills for your own orders');
+      }
+
+      // Generate PDF
+      const pdfBuffer = await generateOrderBillPDF(order);
+
+      // Set response headers for PDF download
+      ctx.set({
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="bill-order-${order.id}-${new Date().toISOString().split('T')[0]}.pdf"`,
+        'Content-Length': pdfBuffer.length.toString(),
+      });
+
+      // Send PDF as response
+      ctx.body = pdfBuffer;
+    } catch (error) {
+      console.error('Error generating bill PDF:', error);
+      return ctx.badRequest('Error generating bill PDF', { error: error.message });
+    }
   }
 }));
+
+/**
+ * Generate PDF bill for an order
+ */
+async function generateOrderBillPDF(order: any): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    try {
+      const doc = new PDFDocument({ margin: 50 });
+      const buffers: Buffer[] = [];
+
+      // Collect PDF data
+      doc.on('data', (buffer) => buffers.push(buffer));
+      doc.on('end', () => resolve(Buffer.concat(buffers)));
+      doc.on('error', reject);
+
+      // Header
+      doc.fontSize(20).text('BOOK STORE', 50, 50);
+      doc.fontSize(16).text('Order Bill / Invoice', 50, 80);
+      doc.moveTo(50, 110).lineTo(550, 110).stroke();
+
+      // Order Information
+      doc.fontSize(12);
+      doc.text(`Order ID: #${order.id}`, 50, 130);
+      doc.text(`Document ID: ${order.documentId}`, 50, 150);
+      doc.text(`Order Date: ${new Date(order.createdAt).toLocaleDateString()}`, 50, 170);
+      doc.text(`Status: ${order.status.toUpperCase()}`, 50, 190);
+
+      // Customer Information
+      doc.text(`Customer: ${order.user.username}`, 300, 130);
+      doc.text(`Email: ${order.user.email}`, 300, 150);
+      if (order.shipping_address) {
+        doc.text(`Shipping Address:`, 300, 170);
+        doc.text(order.shipping_address, 300, 190, { width: 200 });
+      }
+      if (order.phone) {
+        doc.text(`Phone: ${order.phone}`, 300, 220);
+      }
+
+      // Items Table Header
+      let yPosition = 270;
+      doc.moveTo(50, yPosition - 10).lineTo(550, yPosition - 10).stroke();
+
+      doc.fontSize(10).font('Helvetica-Bold');
+      doc.text('Item', 50, yPosition);
+      doc.text('Qty', 350, yPosition);
+      doc.text('Unit Price', 400, yPosition);
+      doc.text('Total', 480, yPosition);
+
+      yPosition += 20;
+      doc.moveTo(50, yPosition - 5).lineTo(550, yPosition - 5).stroke();
+
+      // Items
+      doc.font('Helvetica');
+      let subtotal = 0;
+
+      for (const item of order.order_items) {
+        if (yPosition > 700) {
+          doc.addPage();
+          yPosition = 50;
+        }
+
+        const bookName = item.book.name || 'Unknown Book';
+        const quantity = item.quantity;
+        const unitPrice = item.unit_price;
+        const totalPrice = item.total_price;
+        subtotal += totalPrice;
+
+        // Wrap long book names
+        const bookNameLines = doc.widthOfString(bookName) > 280
+          ? [bookName.substring(0, 40) + '...']
+          : [bookName];
+
+        doc.text(bookNameLines[0], 50, yPosition, { width: 280 });
+        doc.text(quantity.toString(), 350, yPosition);
+        doc.text(`${unitPrice.toLocaleString()} VND`, 400, yPosition);
+        doc.text(`${totalPrice.toLocaleString()} VND`, 480, yPosition);
+
+        yPosition += 25;
+      }
+
+      // Totals
+      yPosition += 10;
+      doc.moveTo(350, yPosition).lineTo(550, yPosition).stroke();
+      yPosition += 15;
+
+      doc.font('Helvetica-Bold');
+      doc.text('Subtotal:', 400, yPosition);
+      doc.text(`${subtotal.toLocaleString()} VND`, 480, yPosition);
+      yPosition += 20;
+
+      doc.fontSize(14);
+      doc.text('TOTAL:', 400, yPosition);
+      doc.text(`${order.total_amount.toLocaleString()} VND`, 480, yPosition);
+
+      // Notes
+      if (order.notes) {
+        yPosition += 40;
+        doc.fontSize(10).font('Helvetica');
+        doc.text('Notes:', 50, yPosition);
+        doc.text(order.notes, 50, yPosition + 15, { width: 500 });
+      }
+
+      // Footer
+      yPosition = 750;
+      doc.fontSize(8).font('Helvetica');
+      doc.text('Thank you for your business!', 50, yPosition);
+      doc.text(`Generated on: ${new Date().toLocaleString()}`, 400, yPosition);
+
+      // Finalize PDF
+      doc.end();
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
