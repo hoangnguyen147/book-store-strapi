@@ -14,7 +14,7 @@
       "name": "MIT",
       "url": "https://opensource.org/licenses/MIT"
     },
-    "x-generation-date": "2025-06-11T08:54:47.139Z"
+    "x-generation-date": "2025-06-15T09:55:18.982Z"
   },
   "x-strapi-config": {
     "plugins": [
@@ -1702,252 +1702,219 @@
       }
     },
     "/orders": {
-      "get": {
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/OrderListResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "Order"
-        ],
-        "parameters": [
-          {
-            "name": "sort",
-            "in": "query",
-            "description": "Sort by attributes ascending (asc) or descending (desc)",
-            "deprecated": false,
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "pagination[withCount]",
-            "in": "query",
-            "description": "Return page/pageSize (default: true)",
-            "deprecated": false,
-            "required": false,
-            "schema": {
-              "type": "boolean"
-            }
-          },
-          {
-            "name": "pagination[page]",
-            "in": "query",
-            "description": "Page number (default: 0)",
-            "deprecated": false,
-            "required": false,
-            "schema": {
-              "type": "integer"
-            }
-          },
-          {
-            "name": "pagination[pageSize]",
-            "in": "query",
-            "description": "Page size (default: 25)",
-            "deprecated": false,
-            "required": false,
-            "schema": {
-              "type": "integer"
-            }
-          },
-          {
-            "name": "pagination[start]",
-            "in": "query",
-            "description": "Offset value (default: 0)",
-            "deprecated": false,
-            "required": false,
-            "schema": {
-              "type": "integer"
-            }
-          },
-          {
-            "name": "pagination[limit]",
-            "in": "query",
-            "description": "Number of entities to return (default: 25)",
-            "deprecated": false,
-            "required": false,
-            "schema": {
-              "type": "integer"
-            }
-          },
-          {
-            "name": "fields",
-            "in": "query",
-            "description": "Fields to return (ex: title,author)",
-            "deprecated": false,
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "populate",
-            "in": "query",
-            "description": "Relations to return",
-            "deprecated": false,
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "filters",
-            "in": "query",
-            "description": "Filters to apply",
-            "deprecated": false,
-            "required": false,
-            "schema": {
-              "type": "object",
-              "additionalProperties": true
-            },
-            "style": "deepObject"
-          },
-          {
-            "name": "locale",
-            "in": "query",
-            "description": "Locale to apply",
-            "deprecated": false,
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "operationId": "get/orders"
-      },
       "post": {
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/OrderResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        },
         "tags": [
-          "Order"
+          "Order Management"
         ],
-        "parameters": [],
-        "operationId": "post/orders",
+        "summary": "Create a complete order with multiple books",
+        "description": "\n**Create a complete order in ONE API call**\n\nThis endpoint allows you to create a complete order with multiple books and quantities.\n\n**IMPORTANT:** You pass book IDs and quantities directly - NOT order item IDs. The order items are created automatically.\n\n**What happens when you call this API:**\n1. ✅ Validates all book IDs exist\n2. ✅ Checks inventory for all books\n3. ✅ Creates the order\n4. ✅ Creates order items automatically\n5. ✅ Deducts inventory from books\n6. ✅ Calculates total amount automatically\n7. ✅ Returns complete order with all details\n\n**If ANY book has insufficient inventory, the ENTIRE order is rejected and NO changes are made.**\n\n**Example workflow:**\n1. Get books: `GET /api/books` → Note the book IDs you want\n2. Create order: `POST /api/orders` → Pass book IDs and quantities\n3. Done! Order created with inventory updated automatically\n                ",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/OrderRequest"
+                "type": "object",
+                "properties": {
+                  "data": {
+                    "$ref": "#/components/schemas/CreateOrderRequest"
+                  }
+                }
+              },
+              "examples": {
+                "single-book-order": {
+                  "summary": "Order with single book",
+                  "description": "Simple order with one book",
+                  "value": {
+                    "data": {
+                      "items": [
+                        {
+                          "book_id": 1,
+                          "quantity": 2
+                        }
+                      ],
+                      "shipping_address": "123 Nguyen Hue Street, Ho Chi Minh City",
+                      "phone": "+84901234567",
+                      "notes": "Please deliver in the morning"
+                    }
+                  }
+                },
+                "multiple-books-order": {
+                  "summary": "Order with multiple books",
+                  "description": "Order with different books and quantities",
+                  "value": {
+                    "data": {
+                      "items": [
+                        {
+                          "book_id": 1,
+                          "quantity": 2
+                        },
+                        {
+                          "book_id": 5,
+                          "quantity": 1
+                        },
+                        {
+                          "book_id": 10,
+                          "quantity": 3
+                        }
+                      ],
+                      "shipping_address": "456 Le Loi Street, Ho Chi Minh City",
+                      "phone": "+84987654321",
+                      "notes": "Call before delivery"
+                    }
+                  }
+                },
+                "minimal-order": {
+                  "summary": "Minimal order (only required fields)",
+                  "description": "Order with only book items (no address/phone/notes)",
+                  "value": {
+                    "data": {
+                      "items": [
+                        {
+                          "book_id": 3,
+                          "quantity": 1
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Order created successfully with inventory updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Order"
+                    }
+                  }
+                },
+                "examples": {
+                  "successful-order": {
+                    "summary": "Successful order creation",
+                    "value": {
+                      "data": {
+                        "id": 1,
+                        "documentId": "order123abc",
+                        "total_amount": 75000,
+                        "status": "pending",
+                        "shipping_address": "123 Nguyen Hue Street, Ho Chi Minh City",
+                        "phone": "+84901234567",
+                        "notes": "Please deliver in the morning",
+                        "order_items": [
+                          {
+                            "id": 1,
+                            "quantity": 2,
+                            "unit_price": 25000,
+                            "total_price": 50000,
+                            "book": {
+                              "id": 1,
+                              "name": "Sample Book",
+                              "quantity": 48,
+                              "sale_price": 25000
+                            }
+                          },
+                          {
+                            "id": 2,
+                            "quantity": 1,
+                            "unit_price": 25000,
+                            "total_price": 25000,
+                            "book": {
+                              "id": 5,
+                              "name": "Another Book",
+                              "quantity": 19,
+                              "sale_price": 25000
+                            }
+                          }
+                        ],
+                        "user": {
+                          "id": 199,
+                          "username": "customer1",
+                          "email": "customer@example.com"
+                        },
+                        "createdAt": "2025-06-15T09:45:00.000Z",
+                        "updatedAt": "2025-06-15T09:45:00.000Z"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Invalid data, insufficient inventory, or book not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                },
+                "examples": {
+                  "insufficient-inventory": {
+                    "summary": "Insufficient inventory",
+                    "value": {
+                      "error": {
+                        "message": "Insufficient inventory for \"The Great Gatsby\". Available: 5, Requested: 10"
+                      }
+                    }
+                  },
+                  "book-not-found": {
+                    "summary": "Book not found",
+                    "value": {
+                      "error": {
+                        "message": "Book with ID 999 not found"
+                      }
+                    }
+                  },
+                  "invalid-quantity": {
+                    "summary": "Invalid quantity",
+                    "value": {
+                      "error": {
+                        "message": "Each item must have quantity > 0"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "type": "string",
+                          "example": "Authentication required"
+                        }
+                      }
+                    }
+                  }
+                }
               }
             }
           }
@@ -8213,6 +8180,9 @@
                 "thumbnail_url": {
                   "type": "string"
                 },
+                "quantity": {
+                  "type": "integer"
+                },
                 "createdAt": {
                   "type": "string",
                   "format": "date-time"
@@ -8342,7 +8312,8 @@
             "required": [
               "name",
               "sale_price",
-              "list_price"
+              "list_price",
+              "quantity"
             ],
             "type": "object",
             "properties": {
@@ -8419,6 +8390,9 @@
               "thumbnail_url": {
                 "type": "string"
               },
+              "quantity": {
+                "type": "integer"
+              },
               "locale": {
                 "type": "string"
               },
@@ -8480,7 +8454,8 @@
         "required": [
           "name",
           "sale_price",
-          "list_price"
+          "list_price",
+          "quantity"
         ],
         "properties": {
           "id": {
@@ -9778,6 +9753,9 @@
                       "thumbnail_url": {
                         "type": "string"
                       },
+                      "quantity": {
+                        "type": "integer"
+                      },
                       "createdAt": {
                         "type": "string",
                         "format": "date-time"
@@ -9890,6 +9868,9 @@
           "tags": {},
           "thumbnail_url": {
             "type": "string"
+          },
+          "quantity": {
+            "type": "integer"
           },
           "createdAt": {
             "type": "string",
@@ -11551,7 +11532,7 @@
                 ],
                 "example": "string or id"
               },
-              "books": {
+              "order_items": {
                 "type": "array",
                 "items": {
                   "oneOf": [
@@ -11645,6 +11626,7 @@
       },
       "Order": {
         "type": "object",
+        "description": "Complete order created in a single API call with automatic inventory management",
         "properties": {
           "id": {
             "type": "integer",
@@ -11656,8 +11638,8 @@
           },
           "total_amount": {
             "type": "integer",
-            "example": 50000,
-            "description": "Total amount in VND"
+            "example": 75000,
+            "description": "Total amount in VND (automatically calculated)"
           },
           "status": {
             "type": "string",
@@ -11668,25 +11650,34 @@
               "delivered",
               "cancelled"
             ],
-            "example": "delivered"
+            "example": "pending",
+            "description": "Order status (starts as pending)"
           },
           "shipping_address": {
             "type": "string",
-            "example": "123 Nguyen Hue Street, Ho Chi Minh City"
+            "example": "123 Nguyen Hue Street, Ho Chi Minh City",
+            "description": "Delivery address"
           },
           "phone": {
             "type": "string",
-            "example": "+84901234567"
+            "example": "+84901234567",
+            "description": "Contact phone number"
           },
           "notes": {
             "type": "string",
-            "example": "Please deliver in the morning"
+            "example": "Please deliver in the morning",
+            "description": "Special delivery instructions"
           },
-          "books": {
+          "order_items": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/Book"
-            }
+              "$ref": "#/components/schemas/OrderItem"
+            },
+            "description": "All items in the order with book details"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User",
+            "description": "User who placed the order"
           },
           "createdAt": {
             "type": "string",
@@ -12498,6 +12489,111 @@
             "example": 250,
             "description": "Total number of items"
           }
+        }
+      },
+      "OrderItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 1
+          },
+          "documentId": {
+            "type": "string",
+            "example": "item123abc"
+          },
+          "quantity": {
+            "type": "integer",
+            "example": 2,
+            "minimum": 1
+          },
+          "unit_price": {
+            "type": "integer",
+            "example": 25000,
+            "description": "Unit price in VND"
+          },
+          "total_price": {
+            "type": "integer",
+            "example": 50000,
+            "description": "Total price in VND"
+          },
+          "book": {
+            "$ref": "#/components/schemas/Book"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CreateOrderRequest": {
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "book_id",
+                "quantity"
+              ],
+              "properties": {
+                "book_id": {
+                  "type": "integer",
+                  "example": 1,
+                  "description": "The ID of the book you want to order (NOT order item ID). This is the book.id from GET /api/books"
+                },
+                "quantity": {
+                  "type": "integer",
+                  "example": 2,
+                  "minimum": 1,
+                  "description": "How many copies of this book you want to order"
+                }
+              },
+              "description": "Book order item - specify which book and how many copies"
+            },
+            "minItems": 1,
+            "description": "Array of books to order. Each item specifies a book ID and quantity. Order items are created automatically."
+          },
+          "shipping_address": {
+            "type": "string",
+            "example": "123 Nguyen Hue Street, Ho Chi Minh City",
+            "description": "Delivery address (optional)"
+          },
+          "phone": {
+            "type": "string",
+            "example": "+84901234567",
+            "description": "Contact phone number (optional)"
+          },
+          "notes": {
+            "type": "string",
+            "example": "Please deliver in the morning",
+            "description": "Special delivery instructions (optional)"
+          }
+        },
+        "example": {
+          "items": [
+            {
+              "book_id": 1,
+              "quantity": 2,
+              "comment": "Order 2 copies of book with ID 1"
+            },
+            {
+              "book_id": 3,
+              "quantity": 1,
+              "comment": "Order 1 copy of book with ID 3"
+            }
+          ],
+          "shipping_address": "123 Nguyen Hue Street, Ho Chi Minh City",
+          "phone": "+84901234567",
+          "notes": "Please deliver in the morning"
         }
       }
     },

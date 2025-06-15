@@ -1,4 +1,8 @@
 export default () => ({
+  // Completely disable i18n plugin to remove locale and localizations from all APIs
+  i18n: {
+    enabled: false,
+  },
   documentation: {
     enabled: true,
     config: {
@@ -65,6 +69,233 @@ export default () => ({
           }
           // Add custom routes to the documentation
           Object.assign(generatedDocumentationDraft.paths, {
+            '/orders': {
+              post: {
+                tags: ['Order Management'],
+                summary: 'Create a complete order with multiple books',
+                description: `
+**Create a complete order in ONE API call**
+
+This endpoint allows you to create a complete order with multiple books and quantities.
+
+**IMPORTANT:** You pass book IDs and quantities directly - NOT order item IDs. The order items are created automatically.
+
+**What happens when you call this API:**
+1. ✅ Validates all book IDs exist
+2. ✅ Checks inventory for all books
+3. ✅ Creates the order
+4. ✅ Creates order items automatically
+5. ✅ Deducts inventory from books
+6. ✅ Calculates total amount automatically
+7. ✅ Returns complete order with all details
+
+**If ANY book has insufficient inventory, the ENTIRE order is rejected and NO changes are made.**
+
+**Example workflow:**
+1. Get books: \`GET /api/books\` → Note the book IDs you want
+2. Create order: \`POST /api/orders\` → Pass book IDs and quantities
+3. Done! Order created with inventory updated automatically
+                `,
+                security: [{ bearerAuth: [] }],
+                requestBody: {
+                  required: true,
+                  content: {
+                    'application/json': {
+                      schema: {
+                        type: 'object',
+                        properties: {
+                          data: { $ref: '#/components/schemas/CreateOrderRequest' }
+                        }
+                      },
+                      examples: {
+                        'single-book-order': {
+                          summary: 'Order with single book',
+                          description: 'Simple order with one book',
+                          value: {
+                            data: {
+                              items: [
+                                {
+                                  book_id: 1,
+                                  quantity: 2
+                                }
+                              ],
+                              shipping_address: '123 Nguyen Hue Street, Ho Chi Minh City',
+                              phone: '+84901234567',
+                              notes: 'Please deliver in the morning'
+                            }
+                          }
+                        },
+                        'multiple-books-order': {
+                          summary: 'Order with multiple books',
+                          description: 'Order with different books and quantities',
+                          value: {
+                            data: {
+                              items: [
+                                {
+                                  book_id: 1,
+                                  quantity: 2
+                                },
+                                {
+                                  book_id: 5,
+                                  quantity: 1
+                                },
+                                {
+                                  book_id: 10,
+                                  quantity: 3
+                                }
+                              ],
+                              shipping_address: '456 Le Loi Street, Ho Chi Minh City',
+                              phone: '+84987654321',
+                              notes: 'Call before delivery'
+                            }
+                          }
+                        },
+                        'minimal-order': {
+                          summary: 'Minimal order (only required fields)',
+                          description: 'Order with only book items (no address/phone/notes)',
+                          value: {
+                            data: {
+                              items: [
+                                {
+                                  book_id: 3,
+                                  quantity: 1
+                                }
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                responses: {
+                  '200': {
+                    description: 'Order created successfully with inventory updated',
+                    content: {
+                      'application/json': {
+                        schema: {
+                          type: 'object',
+                          properties: {
+                            data: { $ref: '#/components/schemas/Order' }
+                          }
+                        },
+                        examples: {
+                          'successful-order': {
+                            summary: 'Successful order creation',
+                            value: {
+                              data: {
+                                id: 1,
+                                documentId: 'order123abc',
+                                total_amount: 75000,
+                                status: 'pending',
+                                shipping_address: '123 Nguyen Hue Street, Ho Chi Minh City',
+                                phone: '+84901234567',
+                                notes: 'Please deliver in the morning',
+                                order_items: [
+                                  {
+                                    id: 1,
+                                    quantity: 2,
+                                    unit_price: 25000,
+                                    total_price: 50000,
+                                    book: {
+                                      id: 1,
+                                      name: 'Sample Book',
+                                      quantity: 48,
+                                      sale_price: 25000
+                                    }
+                                  },
+                                  {
+                                    id: 2,
+                                    quantity: 1,
+                                    unit_price: 25000,
+                                    total_price: 25000,
+                                    book: {
+                                      id: 5,
+                                      name: 'Another Book',
+                                      quantity: 19,
+                                      sale_price: 25000
+                                    }
+                                  }
+                                ],
+                                user: {
+                                  id: 199,
+                                  username: 'customer1',
+                                  email: 'customer@example.com'
+                                },
+                                createdAt: '2025-06-15T09:45:00.000Z',
+                                updatedAt: '2025-06-15T09:45:00.000Z'
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  '400': {
+                    description: 'Bad request - Invalid data, insufficient inventory, or book not found',
+                    content: {
+                      'application/json': {
+                        schema: {
+                          type: 'object',
+                          properties: {
+                            error: {
+                              type: 'object',
+                              properties: {
+                                message: { type: 'string' }
+                              }
+                            }
+                          }
+                        },
+                        examples: {
+                          'insufficient-inventory': {
+                            summary: 'Insufficient inventory',
+                            value: {
+                              error: {
+                                message: 'Insufficient inventory for "The Great Gatsby". Available: 5, Requested: 10'
+                              }
+                            }
+                          },
+                          'book-not-found': {
+                            summary: 'Book not found',
+                            value: {
+                              error: {
+                                message: 'Book with ID 999 not found'
+                              }
+                            }
+                          },
+                          'invalid-quantity': {
+                            summary: 'Invalid quantity',
+                            value: {
+                              error: {
+                                message: 'Each item must have quantity > 0'
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  '401': {
+                    description: 'Authentication required',
+                    content: {
+                      'application/json': {
+                        schema: {
+                          type: 'object',
+                          properties: {
+                            error: {
+                              type: 'object',
+                              properties: {
+                                message: { type: 'string', example: 'Authentication required' }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
             '/books/trendy': {
               get: {
                 tags: ['Book - Custom'],
@@ -646,19 +877,120 @@ export default () => ({
                 total: { type: 'integer', example: 250, description: 'Total number of items' }
               }
             },
-            Order: {
+            OrderItem: {
               type: 'object',
               properties: {
                 id: { type: 'integer', example: 1 },
-                documentId: { type: 'string', example: 'order123abc' },
-                total_amount: { type: 'integer', example: 50000, description: 'Total amount in VND' },
-                status: { type: 'string', enum: ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'], example: 'delivered' },
-                shipping_address: { type: 'string', example: '123 Nguyen Hue Street, Ho Chi Minh City' },
-                phone: { type: 'string', example: '+84901234567' },
-                notes: { type: 'string', example: 'Please deliver in the morning' },
-                books: {
+                documentId: { type: 'string', example: 'item123abc' },
+                quantity: { type: 'integer', example: 2, minimum: 1 },
+                unit_price: { type: 'integer', example: 25000, description: 'Unit price in VND' },
+                total_price: { type: 'integer', example: 50000, description: 'Total price in VND' },
+                book: { $ref: '#/components/schemas/Book' },
+                createdAt: { type: 'string', format: 'date-time' },
+                updatedAt: { type: 'string', format: 'date-time' }
+              }
+            },
+            CreateOrderRequest: {
+              type: 'object',
+              required: ['items'],
+              properties: {
+                items: {
                   type: 'array',
-                  items: { $ref: '#/components/schemas/Book' }
+                  items: {
+                    type: 'object',
+                    required: ['book_id', 'quantity'],
+                    properties: {
+                      book_id: {
+                        type: 'integer',
+                        example: 1,
+                        description: 'The ID of the book you want to order (NOT order item ID). This is the book.id from GET /api/books'
+                      },
+                      quantity: {
+                        type: 'integer',
+                        example: 2,
+                        minimum: 1,
+                        description: 'How many copies of this book you want to order'
+                      }
+                    },
+                    description: 'Book order item - specify which book and how many copies'
+                  },
+                  minItems: 1,
+                  description: 'Array of books to order. Each item specifies a book ID and quantity. Order items are created automatically.'
+                },
+                shipping_address: {
+                  type: 'string',
+                  example: '123 Nguyen Hue Street, Ho Chi Minh City',
+                  description: 'Delivery address (optional)'
+                },
+                phone: {
+                  type: 'string',
+                  example: '+84901234567',
+                  description: 'Contact phone number (optional)'
+                },
+                notes: {
+                  type: 'string',
+                  example: 'Please deliver in the morning',
+                  description: 'Special delivery instructions (optional)'
+                }
+              },
+              example: {
+                items: [
+                  {
+                    book_id: 1,
+                    quantity: 2,
+                    comment: "Order 2 copies of book with ID 1"
+                  },
+                  {
+                    book_id: 3,
+                    quantity: 1,
+                    comment: "Order 1 copy of book with ID 3"
+                  }
+                ],
+                shipping_address: '123 Nguyen Hue Street, Ho Chi Minh City',
+                phone: '+84901234567',
+                notes: 'Please deliver in the morning'
+              }
+            },
+            Order: {
+              type: 'object',
+              description: 'Complete order created in a single API call with automatic inventory management',
+              properties: {
+                id: { type: 'integer', example: 1 },
+                documentId: { type: 'string', example: 'order123abc' },
+                total_amount: {
+                  type: 'integer',
+                  example: 75000,
+                  description: 'Total amount in VND (automatically calculated)'
+                },
+                status: {
+                  type: 'string',
+                  enum: ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'],
+                  example: 'pending',
+                  description: 'Order status (starts as pending)'
+                },
+                shipping_address: {
+                  type: 'string',
+                  example: '123 Nguyen Hue Street, Ho Chi Minh City',
+                  description: 'Delivery address'
+                },
+                phone: {
+                  type: 'string',
+                  example: '+84901234567',
+                  description: 'Contact phone number'
+                },
+                notes: {
+                  type: 'string',
+                  example: 'Please deliver in the morning',
+                  description: 'Special delivery instructions'
+                },
+                order_items: {
+                  type: 'array',
+                  items: { $ref: '#/components/schemas/OrderItem' },
+                  description: 'All items in the order with book details'
+                },
+                user: {
+                  $ref: '#/components/schemas/User',
+                  description: 'User who placed the order'
                 },
                 createdAt: { type: 'string', format: 'date-time' },
                 updatedAt: { type: 'string', format: 'date-time' }

@@ -1,0 +1,42 @@
+{
+  "kind": "collectionType",
+  "collectionName": "order_items",
+  "info": {
+    "singularName": "order-item",
+    "pluralName": "order-items",
+    "displayName": "Order Item",
+    "description": "Items in an order with quantities"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "order": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::order.order",
+      "inversedBy": "order_items"
+    },
+    "book": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::book.book"
+    },
+    "quantity": {
+      "type": "integer",
+      "required": true,
+      "min": 1
+    },
+    "unit_price": {
+      "type": "integer",
+      "required": true,
+      "min": 0
+    },
+    "total_price": {
+      "type": "integer",
+      "required": true,
+      "min": 0
+    }
+  }
+}

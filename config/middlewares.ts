@@ -17,4 +17,9 @@ export default [
   'strapi::session',
   'strapi::favicon',
   'strapi::public',
+  // Custom middleware to remove any i18n related headers/params
+  {
+    name: 'global::remove-i18n',
+    config: {},
+  },
 ];

@@ -17,10 +17,11 @@
       "relation": "manyToOne",
       "target": "plugin::users-permissions.user"
     },
-    "books": {
+    "order_items": {
       "type": "relation",
-      "relation": "manyToMany",
-      "target": "api::book.book"
+      "relation": "oneToMany",
+      "target": "api::order-item.order-item",
+      "mappedBy": "order"
     },
     "total_amount": {
       "type": "integer",

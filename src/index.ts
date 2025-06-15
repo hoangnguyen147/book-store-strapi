@@ -20,6 +20,41 @@ export default {
     console.log('🚀 Bootstrap function called');
     console.log('🔍 SEED_BOOKS environment variable:', process.env.SEED_BOOKS);
 
+    // Add global lifecycle hooks to remove i18n fields from all operations
+    strapi.db.lifecycles.subscribe({
+      models: ['*'], // Apply to all models
+
+      beforeCreate(event) {
+        removeI18nFields(event.params.data);
+      },
+
+      beforeUpdate(event) {
+        removeI18nFields(event.params.data);
+      },
+
+      beforeCreateMany(event) {
+        if (Array.isArray(event.params.data)) {
+          event.params.data.forEach(removeI18nFields);
+        }
+      },
+
+      beforeUpdateMany(event) {
+        removeI18nFields(event.params.data);
+      },
+
+      afterFindOne(event) {
+        removeI18nFields(event.result);
+      },
+
+      afterFindMany(event) {
+        if (Array.isArray(event.result)) {
+          event.result.forEach(removeI18nFields);
+        }
+      },
+    });
+
+    console.log('🚫 i18n fields removal lifecycle hooks registered');
+
     // Check if we should seed data
     if (process.env.SEED_BOOKS === 'true') {
       console.log('🌱 Books seeding is enabled!');
@@ -30,3 +65,27 @@ export default {
     }
   },
 };
+
+/**
+ * Remove i18n related fields from data objects
+ */
+function removeI18nFields(data: any): void {
+  if (!data || typeof data !== 'object') {
+    return;
+  }
+
+  // Remove locale and localizations fields
+  if ('locale' in data) {
+    delete data.locale;
+  }
+  if ('localizations' in data) {
+    delete data.localizations;
+  }
+
+  // Recursively process nested objects
+  Object.values(data).forEach(value => {
+    if (value && typeof value === 'object') {
+      removeI18nFields(value);
+    }
+  });
+}

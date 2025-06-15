@@ -505,6 +505,15 @@ export interface ApiBookBook extends Struct.CollectionTypeSchema {
       Schema.Attribute.Private;
     name: Schema.Attribute.String & Schema.Attribute.Required;
     publishedAt: Schema.Attribute.DateTime;
+    quantity: Schema.Attribute.Integer &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMax<
+        {
+          min: 0;
+        },
+        number
+      > &
+      Schema.Attribute.DefaultTo<0>;
     rating: Schema.Attribute.Decimal &
       Schema.Attribute.SetMinMax<
         {
@@ -594,6 +603,60 @@ export interface ApiGlobalGlobal extends Struct.SingleTypeSchema {
   };
 }
 
+export interface ApiOrderItemOrderItem extends Struct.CollectionTypeSchema {
+  collectionName: 'order_items';
+  info: {
+    description: 'Items in an order with quantities';
+    displayName: 'Order Item';
+    pluralName: 'order-items';
+    singularName: 'order-item';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    book: Schema.Attribute.Relation<'manyToOne', 'api::book.book'>;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::order-item.order-item'
+    > &
+      Schema.Attribute.Private;
+    order: Schema.Attribute.Relation<'manyToOne', 'api::order.order'>;
+    publishedAt: Schema.Attribute.DateTime;
+    quantity: Schema.Attribute.Integer &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMax<
+        {
+          min: 1;
+        },
+        number
+      >;
+    total_price: Schema.Attribute.Integer &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMax<
+        {
+          min: 0;
+        },
+        number
+      >;
+    unit_price: Schema.Attribute.Integer &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMax<
+        {
+          min: 0;
+        },
+        number
+      >;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
 export interface ApiOrderOrder extends Struct.CollectionTypeSchema {
   collectionName: 'orders';
   info: {
@@ -606,7 +669,6 @@ export interface ApiOrderOrder extends Struct.CollectionTypeSchema {
     draftAndPublish: false;
   };
   attributes: {
-    books: Schema.Attribute.Relation<'manyToMany', 'api::book.book'>;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -614,6 +676,10 @@ export interface ApiOrderOrder extends Struct.CollectionTypeSchema {
     localizations: Schema.Attribute.Relation<'oneToMany', 'api::order.order'> &
       Schema.Attribute.Private;
     notes: Schema.Attribute.Text;
+    order_items: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::order-item.order-item'
+    >;
     phone: Schema.Attribute.String;
     publishedAt: Schema.Attribute.DateTime;
     shipping_address: Schema.Attribute.Text;
@@ -1192,6 +1258,7 @@ declare module '@strapi/strapi' {
       'api::book.book': ApiBookBook;
       'api::category.category': ApiCategoryCategory;
       'api::global.global': ApiGlobalGlobal;
+      'api::order-item.order-item': ApiOrderItemOrderItem;
       'api::order.order': ApiOrderOrder;
       'api::user-management.user-management': ApiUserManagementUserManagement;
       'plugin::content-releases.release': PluginContentReleasesRelease;

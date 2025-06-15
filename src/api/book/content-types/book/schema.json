@@ -74,6 +74,12 @@
     "thumbnail_url": {
       "type": "string",
       "required": false
+    },
+    "quantity": {
+      "type": "integer",
+      "required": true,
+      "min": 0,
+      "default": 0
     }
   }
 }

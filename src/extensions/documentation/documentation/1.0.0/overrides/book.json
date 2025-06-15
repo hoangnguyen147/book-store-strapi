@@ -705,6 +705,12 @@
               "$ref": "#/components/schemas/Author"
             }
           },
+          "quantity": {
+            "type": "integer",
+            "minimum": 0,
+            "example": 50,
+            "description": "Available quantity in stock"
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time",
@@ -776,6 +782,12 @@
               "type": "integer"
             },
             "example": [1, 2]
+          },
+          "quantity": {
+            "type": "integer",
+            "minimum": 0,
+            "example": 50,
+            "description": "Available quantity in stock"
           }
         }
       },
