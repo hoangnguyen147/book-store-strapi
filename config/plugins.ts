@@ -71,7 +71,7 @@ export default () => ({
           Object.assign(generatedDocumentationDraft.paths, {
             '/orders': {
               post: {
-                tags: ['Order Management'],
+                tags: ['Orders'],
                 summary: 'Create a complete order with multiple books',
                 description: `
 **Create a complete order in ONE API call**
@@ -644,6 +644,50 @@ This endpoint allows you to create a complete order with multiple books and quan
                 }
               }
             },
+            '/user-delete/{id}': {
+              delete: {
+                tags: ['User Management'],
+                summary: 'Delete a user',
+                description: 'Delete a user by documentId. Users can delete their own account or admins can delete any user.',
+                security: [{ bearerAuth: [] }],
+                parameters: [
+                  {
+                    name: 'id',
+                    in: 'path',
+                    required: true,
+                    schema: { type: 'string' },
+                    description: 'User documentId (24-character alphanumeric string)'
+                  }
+                ],
+                responses: {
+                  200: {
+                    description: 'User deleted successfully',
+                    content: {
+                      'application/json': {
+                        schema: {
+                          type: 'object',
+                          properties: {
+                            data: {
+                              type: 'object',
+                              properties: {
+                                id: { type: 'integer' },
+                                documentId: { type: 'string' },
+                                username: { type: 'string' },
+                                email: { type: 'string' }
+                              }
+                            },
+                            message: { type: 'string', example: 'User deleted successfully' }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  401: { description: 'Unauthorized' },
+                  403: { description: 'Forbidden - Can only delete own account or must be admin' },
+                  404: { description: 'User not found' }
+                }
+              }
+            },
             '/user-management': {
               get: {
                 tags: ['User Management'],
@@ -789,7 +833,7 @@ This endpoint allows you to create a complete order with multiple books and quan
             },
             '/orders/{id}/print-bill': {
               get: {
-                tags: ['Order Management'],
+                tags: ['Orders'],
                 summary: 'Print order bill as PDF',
                 description: `
 **Download order bill as PDF file**
@@ -951,6 +995,503 @@ This endpoint generates and downloads a professional PDF bill/invoice for the sp
                   }
                 }
               }
+            },
+            '/orders/revenue/by-date': {
+              get: {
+                tags: ['Orders'],
+                summary: 'Generate revenue report by specific date',
+                description: `
+**Download revenue report for a specific date as CSV**
+
+This endpoint generates a comprehensive revenue report for a specific date, showing:
+- Book name and quantity sold
+- Total revenue per book
+- Grand total for all sales
+
+**Features:**
+- ✅ CSV format for easy analysis in Excel/Google Sheets
+- ✅ Only includes completed orders (confirmed, shipped, delivered)
+- ✅ Sorted by revenue (highest first)
+- ✅ Includes grand total summary
+- ✅ Professional report header with date and generation time
+
+**CSV Format:**
+\`\`\`
+"Revenue Report - 2025-06-15"
+"Period: 2025-06-15 to 2025-06-15"
+"Generated on: 6/15/2025, 10:30:00 AM"
+
+"Book Name","Quantity Sold","Total Revenue"
+"Modern JavaScript Guide",15,"750,000 VND"
+"Python for Beginners",8,"400,000 VND"
+"--- GRAND TOTAL ---",23,"1,150,000 VND"
+\`\`\`
+
+**File Download:**
+- Automatic CSV download
+- Filename: \`revenue-report-YYYY-MM-DD.csv\`
+                `,
+                security: [{ bearerAuth: [] }],
+                parameters: [
+                  {
+                    name: 'date',
+                    in: 'query',
+                    required: true,
+                    schema: {
+                      type: 'string',
+                      format: 'date',
+                      pattern: '^\\d{4}-\\d{2}-\\d{2}$'
+                    },
+                    description: 'Date for revenue report (YYYY-MM-DD format)',
+                    example: '2025-06-15'
+                  }
+                ],
+                responses: {
+                  '200': {
+                    description: 'CSV revenue report generated and downloaded successfully',
+                    content: {
+                      'text/csv': {
+                        schema: {
+                          type: 'string',
+                          format: 'binary',
+                          description: 'CSV file containing the revenue report'
+                        }
+                      }
+                    },
+                    headers: {
+                      'Content-Type': {
+                        description: 'MIME type of the response',
+                        schema: {
+                          type: 'string',
+                          example: 'text/csv'
+                        }
+                      },
+                      'Content-Disposition': {
+                        description: 'Attachment header with filename',
+                        schema: {
+                          type: 'string',
+                          example: 'attachment; filename="revenue-report-2025-06-15.csv"'
+                        }
+                      }
+                    }
+                  },
+                  '400': {
+                    description: 'Bad request - Invalid or missing date parameter',
+                    content: {
+                      'application/json': {
+                        schema: {
+                          type: 'object',
+                          properties: {
+                            error: {
+                              type: 'object',
+                              properties: {
+                                message: { type: 'string' }
+                              }
+                            }
+                          }
+                        },
+                        examples: {
+                          'missing-date': {
+                            summary: 'Missing date parameter',
+                            value: {
+                              error: {
+                                message: 'Date parameter is required (format: YYYY-MM-DD)'
+                              }
+                            }
+                          },
+                          'invalid-date': {
+                            summary: 'Invalid date format',
+                            value: {
+                              error: {
+                                message: 'Invalid date format. Use YYYY-MM-DD format'
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  '401': {
+                    description: 'Authentication required',
+                    content: {
+                      'application/json': {
+                        schema: {
+                          type: 'object',
+                          properties: {
+                            error: {
+                              type: 'object',
+                              properties: {
+                                message: {
+                                  type: 'string',
+                                  example: 'Authentication required to access revenue reports'
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            '/orders/revenue/by-duration': {
+              get: {
+                tags: ['Orders'],
+                summary: 'Generate revenue report by date range',
+                description: `
+**Download revenue report for a date range as CSV**
+
+This endpoint generates a comprehensive revenue report for a specified date range, showing:
+- Book name and total quantity sold during the period
+- Total revenue per book during the period
+- Grand total for all sales in the period
+
+**Features:**
+- ✅ CSV format for easy analysis in Excel/Google Sheets
+- ✅ Only includes completed orders (confirmed, shipped, delivered)
+- ✅ Sorted by revenue (highest first)
+- ✅ Includes grand total summary
+- ✅ Professional report header with date range and generation time
+
+**CSV Format:**
+\`\`\`
+"Revenue Report - 2025-06-01 to 2025-06-15"
+"Period: 2025-06-01 to 2025-06-15"
+"Generated on: 6/15/2025, 10:30:00 AM"
+
+"Book Name","Quantity Sold","Total Revenue"
+"Modern JavaScript Guide",45,"2,250,000 VND"
+"Python for Beginners",32,"1,600,000 VND"
+"React Handbook",28,"1,400,000 VND"
+"--- GRAND TOTAL ---",105,"5,250,000 VND"
+\`\`\`
+
+**File Download:**
+- Automatic CSV download
+- Filename: \`revenue-report-YYYY-MM-DD-to-YYYY-MM-DD.csv\`
+                `,
+                security: [{ bearerAuth: [] }],
+                parameters: [
+                  {
+                    name: 'startDate',
+                    in: 'query',
+                    required: true,
+                    schema: {
+                      type: 'string',
+                      format: 'date',
+                      pattern: '^\\d{4}-\\d{2}-\\d{2}$'
+                    },
+                    description: 'Start date for revenue report (YYYY-MM-DD format)',
+                    example: '2025-06-01'
+                  },
+                  {
+                    name: 'endDate',
+                    in: 'query',
+                    required: true,
+                    schema: {
+                      type: 'string',
+                      format: 'date',
+                      pattern: '^\\d{4}-\\d{2}-\\d{2}$'
+                    },
+                    description: 'End date for revenue report (YYYY-MM-DD format)',
+                    example: '2025-06-15'
+                  }
+                ],
+                responses: {
+                  '200': {
+                    description: 'CSV revenue report generated and downloaded successfully',
+                    content: {
+                      'text/csv': {
+                        schema: {
+                          type: 'string',
+                          format: 'binary',
+                          description: 'CSV file containing the revenue report'
+                        }
+                      }
+                    },
+                    headers: {
+                      'Content-Type': {
+                        description: 'MIME type of the response',
+                        schema: {
+                          type: 'string',
+                          example: 'text/csv'
+                        }
+                      },
+                      'Content-Disposition': {
+                        description: 'Attachment header with filename',
+                        schema: {
+                          type: 'string',
+                          example: 'attachment; filename="revenue-report-2025-06-01-to-2025-06-15.csv"'
+                        }
+                      }
+                    }
+                  },
+                  '400': {
+                    description: 'Bad request - Invalid or missing date parameters',
+                    content: {
+                      'application/json': {
+                        schema: {
+                          type: 'object',
+                          properties: {
+                            error: {
+                              type: 'object',
+                              properties: {
+                                message: { type: 'string' }
+                              }
+                            }
+                          }
+                        },
+                        examples: {
+                          'missing-dates': {
+                            summary: 'Missing date parameters',
+                            value: {
+                              error: {
+                                message: 'Both startDate and endDate parameters are required (format: YYYY-MM-DD)'
+                              }
+                            }
+                          },
+                          'invalid-dates': {
+                            summary: 'Invalid date format',
+                            value: {
+                              error: {
+                                message: 'Invalid date format. Use YYYY-MM-DD format'
+                              }
+                            }
+                          },
+                          'invalid-range': {
+                            summary: 'Invalid date range',
+                            value: {
+                              error: {
+                                message: 'Start date must be before or equal to end date'
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  '401': {
+                    description: 'Authentication required',
+                    content: {
+                      'application/json': {
+                        schema: {
+                          type: 'object',
+                          properties: {
+                            error: {
+                              type: 'object',
+                              properties: {
+                                message: {
+                                  type: 'string',
+                                  example: 'Authentication required to access revenue reports'
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            '/orders/admin/all-orders': {
+              get: {
+                tags: ['Orders'],
+                summary: 'Get all orders from all users (Admin only)',
+                description: 'Get paginated list of all orders from all users with advanced filtering. Requires admin role.',
+                security: [{ bearerAuth: [] }],
+                parameters: [
+                  {
+                    name: 'page',
+                    in: 'query',
+                    required: false,
+                    schema: { type: 'integer', default: 1, minimum: 1 },
+                    description: 'Page number'
+                  },
+                  {
+                    name: 'pageSize',
+                    in: 'query',
+                    required: false,
+                    schema: { type: 'integer', default: 25, minimum: 1, maximum: 100 },
+                    description: 'Number of orders per page'
+                  },
+                  {
+                    name: 'status',
+                    in: 'query',
+                    required: false,
+                    schema: {
+                      type: 'string',
+                      enum: ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled']
+                    },
+                    description: 'Filter by order status'
+                  },
+                  {
+                    name: 'sort',
+                    in: 'query',
+                    required: false,
+                    schema: { type: 'string', default: 'createdAt:desc' },
+                    description: 'Sort orders (e.g., createdAt:desc, total_amount:asc)'
+                  },
+                  {
+                    name: 'search',
+                    in: 'query',
+                    required: false,
+                    schema: { type: 'string' },
+                    description: 'Search in username, email, shipping address, or phone'
+                  },
+                  {
+                    name: 'startDate',
+                    in: 'query',
+                    required: false,
+                    schema: { type: 'string', format: 'date' },
+                    description: 'Filter orders from this date (YYYY-MM-DD)'
+                  },
+                  {
+                    name: 'endDate',
+                    in: 'query',
+                    required: false,
+                    schema: { type: 'string', format: 'date' },
+                    description: 'Filter orders until this date (YYYY-MM-DD)'
+                  }
+                ],
+                responses: {
+                  200: {
+                    description: 'All orders retrieved successfully',
+                    content: {
+                      'application/json': {
+                        schema: {
+                          type: 'object',
+                          properties: {
+                            data: {
+                              type: 'array',
+                              items: { $ref: '#/components/schemas/Order' }
+                            },
+                            meta: {
+                              type: 'object',
+                              properties: {
+                                pagination: {
+                                  type: 'object',
+                                  properties: {
+                                    page: { type: 'integer', example: 1 },
+                                    pageSize: { type: 'integer', example: 25 },
+                                    pageCount: { type: 'integer', example: 10 },
+                                    total: { type: 'integer', example: 250 }
+                                  }
+                                }
+                              }
+                            },
+                            message: { type: 'string', example: 'All orders retrieved successfully' }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  401: { description: 'Unauthorized' },
+                  403: { description: 'Forbidden - Admin access required' }
+                }
+              }
+            },
+            '/orders/my-orders': {
+              get: {
+                tags: ['Orders'],
+                summary: 'Get current user orders',
+                description: 'Get paginated list of orders for the authenticated user with optional status filtering',
+                security: [{ bearerAuth: [] }],
+                parameters: [
+                  {
+                    name: 'page',
+                    in: 'query',
+                    required: false,
+                    schema: { type: 'integer', default: 1, minimum: 1 },
+                    description: 'Page number'
+                  },
+                  {
+                    name: 'pageSize',
+                    in: 'query',
+                    required: false,
+                    schema: { type: 'integer', default: 10, minimum: 1, maximum: 100 },
+                    description: 'Number of orders per page'
+                  },
+                  {
+                    name: 'status',
+                    in: 'query',
+                    required: false,
+                    schema: {
+                      type: 'string',
+                      enum: ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled']
+                    },
+                    description: 'Filter by order status'
+                  },
+                  {
+                    name: 'sort',
+                    in: 'query',
+                    required: false,
+                    schema: { type: 'string', default: 'createdAt:desc' },
+                    description: 'Sort orders (e.g., createdAt:desc, total_amount:asc)'
+                  }
+                ],
+                responses: {
+                  200: {
+                    description: 'Orders retrieved successfully',
+                    content: {
+                      'application/json': {
+                        schema: {
+                          type: 'object',
+                          properties: {
+                            data: {
+                              type: 'array',
+                              items: { $ref: '#/components/schemas/Order' }
+                            },
+                            message: { type: 'string', example: 'Orders retrieved successfully' }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  401: { description: 'Unauthorized' }
+                }
+              }
+            },
+            '/orders/detail/{id}': {
+              get: {
+                tags: ['Orders'],
+                summary: 'Get order details',
+                description: 'Get detailed information about a specific order by documentId. **Important:** This endpoint expects documentId (24-character string), not integer ID.',
+                security: [{ bearerAuth: [] }],
+                parameters: [
+                  {
+                    name: 'id',
+                    in: 'path',
+                    required: true,
+                    schema: {
+                      type: 'string',
+                      pattern: '^[a-z0-9]{24}$',
+                      example: 'order123documentid567890'
+                    },
+                    description: 'Order documentId (24-character alphanumeric string, not integer ID)'
+                  }
+                ],
+                responses: {
+                  200: {
+                    description: 'Order details retrieved successfully',
+                    content: {
+                      'application/json': {
+                        schema: {
+                          type: 'object',
+                          properties: {
+                            data: { $ref: '#/components/schemas/Order' },
+                            message: { type: 'string', example: 'Order details retrieved successfully' }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  401: { description: 'Unauthorized' },
+                  403: { description: 'Forbidden - Can only view own orders' },
+                  404: { description: 'Order not found' }
+                }
+              }
             }
           });
 
@@ -1002,10 +1543,20 @@ This endpoint generates and downloads a professional PDF bill/invoice for the sp
               type: 'object',
               properties: {
                 id: { type: 'integer', example: 1 },
+                documentId: { type: 'string', example: 'user123abc' },
                 username: { type: 'string', example: 'john_doe' },
                 email: { type: 'string', format: 'email', example: 'john@example.com' },
                 confirmed: { type: 'boolean', example: true },
                 blocked: { type: 'boolean', example: false },
+                role: {
+                  type: 'object',
+                  properties: {
+                    id: { type: 'integer', example: 1 },
+                    name: { type: 'string', example: 'Authenticated' },
+                    type: { type: 'string', example: 'authenticated' }
+                  },
+                  description: 'User role information'
+                },
                 city: { type: 'string', example: 'Ho Chi Minh City' },
                 country: { type: 'string', example: 'Vietnam' },
                 address: { type: 'string', example: '123 Nguyen Hue Street' },

@@ -3,6 +3,15 @@
 module.exports = {
   routes: [
     {
+      method: 'DELETE',
+      path: '/users/delete/:id',
+      handler: 'user.delete',
+      config: {
+        policies: [],
+        middlewares: [],
+      },
+    },
+    {
       method: 'GET',
       path: '/users-list',
       handler: 'user.find',

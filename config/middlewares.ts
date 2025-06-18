@@ -14,6 +14,11 @@ export default [
   'strapi::poweredBy',
   'strapi::query',
   'strapi::body',
+  // Custom middleware to auto-assign role for user creation
+  {
+    name: 'global::auto-assign-role',
+    config: {},
+  },
   'strapi::session',
   'strapi::favicon',
   'strapi::public',

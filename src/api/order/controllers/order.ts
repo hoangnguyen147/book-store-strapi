@@ -4,6 +4,7 @@
 
 import { factories } from '@strapi/strapi';
 import PDFDocument from 'pdfkit';
+import * as csvWriter from 'csv-writer';
 
 interface OrderItem {
   book_id: number;
@@ -169,6 +170,225 @@ export default factories.createCoreController('api::order.order', ({ strapi }) =
     }
   },
 
+  /**
+   * Get all orders from all users - Admin only
+   */
+  async getAllOrdersAdmin(ctx) {
+    try {
+      const userId = ctx.state.user?.id;
+
+      // Authentication check
+      if (!userId) {
+        return ctx.unauthorized('Authentication required to view orders');
+      }
+
+      // Admin authorization check
+      const currentUser: any = await strapi.entityService.findOne('plugin::users-permissions.user', userId, {
+        populate: ['role']
+      });
+
+      if (!currentUser || currentUser.role?.type !== 'admin') {
+        return ctx.forbidden('Admin access required to view all orders');
+      }
+
+      // Extract query parameters
+      const {
+        page = 1,
+        pageSize = 25,
+        status,
+        sort = 'createdAt:desc',
+        search,
+        startDate,
+        endDate
+      } = ctx.query;
+
+      // Build filters
+      const filters: any = {};
+
+      // Add status filter if provided
+      if (status) {
+        filters.status = status;
+      }
+
+      // Add date range filter if provided
+      if (startDate || endDate) {
+        filters.createdAt = {};
+        if (startDate) {
+          filters.createdAt.$gte = new Date(startDate as string).toISOString();
+        }
+        if (endDate) {
+          filters.createdAt.$lte = new Date(endDate as string).toISOString();
+        }
+      }
+
+      // Add user search filter if provided
+      if (search) {
+        filters.$or = [
+          { user: { username: { $containsi: search } } },
+          { user: { email: { $containsi: search } } },
+          { shipping_address: { $containsi: search } },
+          { phone: { $containsi: search } }
+        ];
+      }
+
+      // Fetch all orders with pagination
+      const orders = await strapi.entityService.findMany('api::order.order', {
+        filters,
+        sort: sort,
+        pagination: {
+          page: parseInt(page as string),
+          pageSize: parseInt(pageSize as string)
+        },
+        populate: {
+          order_items: {
+            populate: {
+              book: {
+                populate: ['thumbnail', 'categories', 'authors']
+              }
+            }
+          },
+          user: {
+            fields: ['id', 'username', 'email']
+          }
+        }
+      });
+
+      // Get pagination info
+      const total = await strapi.entityService.count('api::order.order', { filters });
+      const pageCount = Math.ceil(total / parseInt(pageSize as string));
+
+      return ctx.send({
+        data: orders,
+        meta: {
+          pagination: {
+            page: parseInt(page as string),
+            pageSize: parseInt(pageSize as string),
+            pageCount,
+            total
+          }
+        },
+        message: 'All orders retrieved successfully'
+      });
+    } catch (error) {
+      console.error('Error fetching all orders:', error);
+      return ctx.badRequest('Error fetching orders', { error: error.message });
+    }
+  },
+
+  /**
+   * Get current user's orders with pagination and filtering
+   */
+  async getMyOrders(ctx) {
+    try {
+      const userId = ctx.state.user?.id;
+
+      // Authentication check
+      if (!userId) {
+        return ctx.unauthorized('Authentication required to view orders');
+      }
+
+      // Extract query parameters
+      const { page = 1, pageSize = 10, status, sort = 'createdAt:desc' } = ctx.query;
+
+      // Build filters
+      const filters: any = {
+        user: userId
+      };
+
+      // Add status filter if provided
+      if (status) {
+        filters.status = status;
+      }
+
+      // Fetch orders with pagination
+      const orders = await strapi.entityService.findMany('api::order.order', {
+        filters,
+        sort: sort,
+        pagination: {
+          page: parseInt(page as string),
+          pageSize: parseInt(pageSize as string)
+        },
+        populate: {
+          order_items: {
+            populate: {
+              book: {
+                populate: ['thumbnail', 'categories', 'authors']
+              }
+            }
+          }
+        }
+      });
+
+      return ctx.send({
+        data: orders,
+        message: 'Orders retrieved successfully'
+      });
+    } catch (error) {
+      console.error('Error fetching user orders:', error);
+      return ctx.badRequest('Error fetching orders', { error: error.message });
+    }
+  },
+
+  /**
+   * Get order detail by documentId with full information
+   */
+  async getOrderDetail(ctx) {
+    try {
+      const { id } = ctx.params;
+      const userId = ctx.state.user?.id;
+
+      // Authentication check
+      if (!userId) {
+        return ctx.unauthorized('Authentication required to view order details');
+      }
+
+      // Validate documentId format (24-character alphanumeric string)
+      if (!id || typeof id !== 'string' || !/^[a-z0-9]{24}$/.test(id)) {
+        return ctx.badRequest('Invalid documentId format. Expected 24-character alphanumeric string.');
+      }
+
+      // Find order by documentId
+      let order: any;
+      try {
+        order = await strapi.db.query('api::order.order').findOne({
+          where: { documentId: id },
+          populate: {
+            order_items: {
+              populate: {
+                book: {
+                  populate: ['thumbnail', 'categories', 'authors']
+                }
+              }
+            },
+            user: {
+              fields: ['id', 'username', 'email']
+            }
+          }
+        });
+      } catch (dbError) {
+        console.error('Database error:', dbError);
+        return ctx.badRequest('Error querying order', { error: dbError.message });
+      }
+
+      if (!order) {
+        return ctx.notFound('Order not found');
+      }
+
+      // Check if user owns this order
+      if (order.user?.id !== userId) {
+        return ctx.forbidden('You can only view your own orders');
+      }
+
+      return ctx.send({
+        data: order,
+        message: 'Order details retrieved successfully'
+      });
+    } catch (error) {
+      console.error('Error fetching order details:', error);
+      return ctx.badRequest('Error fetching order details', { error: error.message });
+    }
+  },
+
   // Override findOne to include order items
   async findOne(ctx) {
     const { id } = ctx.params;
@@ -266,6 +486,105 @@ export default factories.createCoreController('api::order.order', ({ strapi }) =
       console.error('Error generating bill PDF:', error);
       return ctx.badRequest('Error generating bill PDF', { error: error.message });
     }
+  },
+
+  /**
+   * Generate revenue report by specific date
+   */
+  async revenueByDate(ctx) {
+    try {
+      const { date } = ctx.query;
+      const userId = ctx.state.user?.id;
+
+      // Authentication check
+      if (!userId) {
+        return ctx.unauthorized('Authentication required to access revenue reports');
+      }
+
+      // Validate date parameter
+      if (!date) {
+        return ctx.badRequest('Date parameter is required (format: YYYY-MM-DD)');
+      }
+
+      const targetDate = new Date(date as string);
+      if (isNaN(targetDate.getTime())) {
+        return ctx.badRequest('Invalid date format. Use YYYY-MM-DD format');
+      }
+
+      // Set date range for the specific day
+      const startDate = new Date(targetDate);
+      startDate.setHours(0, 0, 0, 0);
+
+      const endDate = new Date(targetDate);
+      endDate.setHours(23, 59, 59, 999);
+
+      // Generate revenue report
+      const csvBuffer = await generateRevenueReport(startDate, endDate, `Revenue Report - ${date}`);
+
+      // Set response headers for CSV download
+      ctx.set({
+        'Content-Type': 'text/csv',
+        'Content-Disposition': `attachment; filename="revenue-report-${date}.csv"`,
+        'Content-Length': csvBuffer.length.toString(),
+      });
+
+      // Send CSV as response
+      ctx.body = csvBuffer;
+    } catch (error) {
+      console.error('Error generating revenue report by date:', error);
+      return ctx.badRequest('Error generating revenue report', { error: error.message });
+    }
+  },
+
+  /**
+   * Generate revenue report by date range
+   */
+  async revenueByDuration(ctx) {
+    try {
+      const { startDate, endDate } = ctx.query;
+      const userId = ctx.state.user?.id;
+
+      // Authentication check
+      if (!userId) {
+        return ctx.unauthorized('Authentication required to access revenue reports');
+      }
+
+      // Validate date parameters
+      if (!startDate || !endDate) {
+        return ctx.badRequest('Both startDate and endDate parameters are required (format: YYYY-MM-DD)');
+      }
+
+      const start = new Date(startDate as string);
+      const end = new Date(endDate as string);
+
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+        return ctx.badRequest('Invalid date format. Use YYYY-MM-DD format');
+      }
+
+      if (start > end) {
+        return ctx.badRequest('Start date must be before or equal to end date');
+      }
+
+      // Set time ranges
+      start.setHours(0, 0, 0, 0);
+      end.setHours(23, 59, 59, 999);
+
+      // Generate revenue report
+      const csvBuffer = await generateRevenueReport(start, end, `Revenue Report - ${startDate} to ${endDate}`);
+
+      // Set response headers for CSV download
+      ctx.set({
+        'Content-Type': 'text/csv',
+        'Content-Disposition': `attachment; filename="revenue-report-${startDate}-to-${endDate}.csv"`,
+        'Content-Length': csvBuffer.length.toString(),
+      });
+
+      // Send CSV as response
+      ctx.body = csvBuffer;
+    } catch (error) {
+      console.error('Error generating revenue report by duration:', error);
+      return ctx.badRequest('Error generating revenue report', { error: error.message });
+    }
   }
 }));
 
@@ -279,7 +598,7 @@ async function generateOrderBillPDF(order: any): Promise<Buffer> {
       const buffers: Buffer[] = [];
 
       // Collect PDF data
-      doc.on('data', (buffer) => buffers.push(buffer));
+      doc.on('data', (buffer: Buffer) => buffers.push(buffer));
       doc.on('end', () => resolve(Buffer.concat(buffers)));
       doc.on('error', reject);
 
@@ -382,4 +701,117 @@ async function generateOrderBillPDF(order: any): Promise<Buffer> {
       reject(error);
     }
   });
+}
+
+/**
+ * Generate revenue report CSV for a given date range
+ */
+async function generateRevenueReport(startDate: Date, endDate: Date, reportTitle: string): Promise<Buffer> {
+  try {
+    console.log(`🔍 Generating revenue report for period: ${startDate.toISOString()} to ${endDate.toISOString()}`);
+
+    // Fetch orders within the date range with order items and books
+    const orders: any = await strapi.entityService.findMany('api::order.order', {
+      filters: {
+        createdAt: {
+          $gte: startDate.toISOString(),
+          $lte: endDate.toISOString()
+        },
+        status: {
+          $in: ['pending', 'confirmed', 'shipped', 'delivered'] // Include all orders except cancelled
+        }
+      },
+      populate: {
+        order_items: {
+          populate: {
+            book: {
+              fields: ['name']
+            }
+          }
+        }
+      }
+    });
+
+    console.log(`📊 Found ${orders.length} orders in the specified period`);
+    if (orders.length > 0) {
+      console.log(`📅 Order dates: ${orders.map((o: any) => new Date(o.createdAt).toISOString().split('T')[0]).join(', ')}`);
+      console.log(`📋 Order statuses: ${orders.map((o: any) => o.status).join(', ')}`);
+    }
+
+    // Process data to calculate revenue by book
+    const bookRevenueMap = new Map();
+    let grandTotal = 0;
+
+    for (const order of orders) {
+      if (order.order_items && Array.isArray(order.order_items)) {
+        for (const item of order.order_items) {
+          const bookName = item.book?.name || 'Unknown Book';
+          const quantity = item.quantity || 0;
+          const totalPrice = item.total_price || 0;
+
+          if (bookRevenueMap.has(bookName)) {
+            const existing = bookRevenueMap.get(bookName);
+            existing.quantity += quantity;
+            existing.totalRevenue += totalPrice;
+          } else {
+            bookRevenueMap.set(bookName, {
+              bookName,
+              quantity,
+              totalRevenue: totalPrice
+            });
+          }
+
+          grandTotal += totalPrice;
+        }
+      }
+    }
+
+    // Convert map to array and sort by revenue (highest first)
+    const revenueData = Array.from(bookRevenueMap.values()).sort((a, b) => b.totalRevenue - a.totalRevenue);
+
+    // Add grand total row
+    revenueData.push({
+      bookName: '--- GRAND TOTAL ---',
+      quantity: revenueData.reduce((sum, item) => sum + item.quantity, 0),
+      totalRevenue: grandTotal
+    });
+
+    // Create CSV content
+    const csvContent = await createCSVContent(revenueData, reportTitle, startDate, endDate);
+
+    return Buffer.from(csvContent, 'utf8');
+  } catch (error) {
+    console.error('Error generating revenue report:', error);
+    throw error;
+  }
+}
+
+/**
+ * Create CSV content from revenue data
+ */
+async function createCSVContent(revenueData: any[], reportTitle: string, startDate: Date, endDate: Date): Promise<string> {
+  const formatDate = (date: Date) => date.toISOString().split('T')[0];
+  const formatCurrency = (amount: number) => amount.toLocaleString('vi-VN') + ' VND';
+
+  let csvContent = '';
+
+  // Header information
+  csvContent += `"${reportTitle}"\n`;
+  csvContent += `"Period: ${formatDate(startDate)} to ${formatDate(endDate)}"\n`;
+  csvContent += `"Generated on: ${new Date().toLocaleString()}"\n`;
+  csvContent += '\n';
+
+  // Column headers
+  csvContent += '"Book Name","Quantity Sold","Total Revenue"\n';
+
+  // Data rows
+  for (const item of revenueData) {
+    const bookName = `"${item.bookName.replace(/"/g, '""')}"`;
+    const quantity = item.quantity;
+    const revenue = `"${formatCurrency(item.totalRevenue)}"`;
+
+    csvContent += `${bookName},${quantity},${revenue}\n`;
+  }
+
+  return csvContent;
 }
