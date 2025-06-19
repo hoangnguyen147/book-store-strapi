@@ -32,18 +32,42 @@ export default factories.createCoreController('api::author.author', ({ strapi })
     const { data } = ctx.request.body;
 
     if (data.email) {
-      // Check if email already exists for other authors
-      const existingAuthor = await strapi.db.query('api::author.author').findOne({
-        where: {
-          email: data.email,
-          id: { $ne: id }
+      // First, get the current author to find their numeric ID
+      let currentAuthor;
+      try {
+        // Check if id is numeric (old format) or documentId (new format)
+        if (isNaN(parseInt(id))) {
+          // It's a documentId
+          currentAuthor = await strapi.db.query('api::author.author').findOne({
+            where: { documentId: id }
+          });
+        } else {
+          // It's a numeric ID
+          currentAuthor = await strapi.db.query('api::author.author').findOne({
+            where: { id: parseInt(id) }
+          });
         }
-      });
 
-      if (existingAuthor) {
-        return ctx.badRequest('Email already exists', {
-          error: 'Another author with this email already exists'
+        if (!currentAuthor) {
+          return ctx.notFound('Author not found');
+        }
+
+        // Check if email already exists for other authors using numeric ID
+        const existingAuthor = await strapi.db.query('api::author.author').findOne({
+          where: {
+            email: data.email,
+            id: { $ne: currentAuthor.id }  // Use numeric ID here
+          }
         });
+
+        if (existingAuthor) {
+          return ctx.badRequest('Email already exists', {
+            error: 'Another author with this email already exists'
+          });
+        }
+      } catch (error) {
+        console.error('Error checking email uniqueness:', error);
+        return ctx.badRequest('Error validating email', { error: error.message });
       }
     }
 
@@ -88,18 +112,29 @@ export default factories.createCoreController('api::author.author', ({ strapi })
     const { id } = ctx.params;
 
     try {
-      // First check if author exists
-      const author = await strapi.db.query('api::author.author').findOne({
-        where: { id }
+      // First check if author exists and handle both numeric ID and documentId
+      let author;
+      let whereClause;
+
+      if (isNaN(parseInt(id))) {
+        // It's a documentId
+        whereClause = { documentId: id };
+      } else {
+        // It's a numeric ID
+        whereClause = { id: parseInt(id) };
+      }
+
+      author = await strapi.db.query('api::author.author').findOne({
+        where: whereClause
       });
 
       if (!author) {
         return ctx.notFound('Author not found');
       }
 
-      // Delete the author
+      // Delete the author using the same where clause
       const entity = await strapi.db.query('api::author.author').delete({
-        where: { id }
+        where: whereClause
       });
 
       return ctx.send({

@@ -30,9 +30,20 @@ export default factories.createCoreController('api::book.book', ({ strapi }) => 
     const { id } = ctx.params;
 
     try {
-      // Use query builder to get book with categories
-      const currentBook = await strapi.db.query('api::book.book').findOne({
-        where: { id },
+      // Find current book by documentId or numeric ID
+      let currentBook;
+      let whereClause;
+
+      if (isNaN(parseInt(id))) {
+        // It's a documentId
+        whereClause = { documentId: id };
+      } else {
+        // It's a numeric ID
+        whereClause = { id: parseInt(id) };
+      }
+
+      currentBook = await strapi.db.query('api::book.book').findOne({
+        where: whereClause,
         populate: ['categories']
       });
 
@@ -47,10 +58,10 @@ export default factories.createCoreController('api::book.book', ({ strapi }) => 
         return ctx.send({ data: [], meta: { pagination: { total: 0 } } });
       }
 
-      // Find books with same categories, excluding current book
+      // Find books with same categories, excluding current book using numeric ID
       const similarBooks = await strapi.db.query('api::book.book').findMany({
         where: {
-          id: { $ne: id },
+          id: { $ne: currentBook.id },  // Use numeric ID here
           categories: { id: { $in: categoryIds } }
         },
         populate: ['thumbnail', 'categories', 'authors'],

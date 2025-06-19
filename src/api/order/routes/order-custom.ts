@@ -15,6 +15,15 @@ export default {
     },
     {
       method: 'GET',
+      path: '/orders/admin/export-csv',
+      handler: 'order.exportOrdersCSV',
+      config: {
+        policies: [],
+        middlewares: [],
+      },
+    },
+    {
+      method: 'GET',
       path: '/orders/my-orders',
       handler: 'order.getMyOrders',
       config: {

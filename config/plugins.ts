@@ -1392,6 +1392,68 @@ This endpoint generates a comprehensive revenue report for a specified date rang
                 }
               }
             },
+            '/orders/admin/export-csv': {
+              get: {
+                tags: ['Orders'],
+                summary: 'Export all orders to CSV (Admin only)',
+                description: 'Export all orders with detailed user information to CSV file. Supports same filtering as all-orders API. Requires admin role.',
+                security: [{ bearerAuth: [] }],
+                parameters: [
+                  {
+                    name: 'status',
+                    in: 'query',
+                    required: false,
+                    schema: {
+                      type: 'string',
+                      enum: ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled']
+                    },
+                    description: 'Filter by order status'
+                  },
+                  {
+                    name: 'search',
+                    in: 'query',
+                    required: false,
+                    schema: { type: 'string' },
+                    description: 'Search in username, email, shipping address, or phone'
+                  },
+                  {
+                    name: 'startDate',
+                    in: 'query',
+                    required: false,
+                    schema: { type: 'string', format: 'date' },
+                    description: 'Filter orders from this date (YYYY-MM-DD)'
+                  },
+                  {
+                    name: 'endDate',
+                    in: 'query',
+                    required: false,
+                    schema: { type: 'string', format: 'date' },
+                    description: 'Filter orders until this date (YYYY-MM-DD)'
+                  }
+                ],
+                responses: {
+                  200: {
+                    description: 'CSV file with orders data',
+                    content: {
+                      'text/csv': {
+                        schema: {
+                          type: 'string',
+                          example: 'Order ID,Document ID,Order Date,Customer Name,Customer Email,Customer Phone,Status,Total Amount,Shipping Address,Books,Quantities,Notes\n1,abc123,2025-06-19,john_doe,john@example.com,+84901234567,pending,75000,"123 Main St","Book 1; Book 2","2; 1","Special delivery"'
+                        }
+                      }
+                    },
+                    headers: {
+                      'Content-Disposition': {
+                        description: 'Attachment filename',
+                        schema: { type: 'string', example: 'attachment; filename="orders-export-2025-06-19.csv"' }
+                      }
+                    }
+                  },
+                  401: { description: 'Unauthorized' },
+                  403: { description: 'Forbidden - Admin access required' }
+                }
+              }
+            },
             '/orders/my-orders': {
               get: {
                 tags: ['Orders'],

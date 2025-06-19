@@ -247,9 +247,7 @@ export default factories.createCoreController('api::order.order', ({ strapi }) =
               }
             }
           },
-          user: {
-            fields: ['id', 'username', 'email']
-          }
+          user: true
         }
       });
 
@@ -272,6 +270,130 @@ export default factories.createCoreController('api::order.order', ({ strapi }) =
     } catch (error) {
       console.error('Error fetching all orders:', error);
       return ctx.badRequest('Error fetching orders', { error: error.message });
+    }
+  },
+
+  /**
+   * Export all orders to CSV - Admin only
+   */
+  async exportOrdersCSV(ctx) {
+    try {
+      const userId = ctx.state.user?.id;
+
+      // Authentication check
+      if (!userId) {
+        return ctx.unauthorized('Authentication required to export orders');
+      }
+
+      // Admin authorization check
+      const currentUser: any = await strapi.entityService.findOne('plugin::users-permissions.user', userId, {
+        populate: ['role']
+      });
+
+      if (!currentUser || currentUser.role?.type !== 'admin') {
+        return ctx.forbidden('Admin access required to export orders');
+      }
+
+      // Extract query parameters for filtering
+      const {
+        status,
+        search,
+        startDate,
+        endDate
+      } = ctx.query;
+
+      // Build filters (same as getAllOrdersAdmin)
+      const filters: any = {};
+
+      if (status) {
+        filters.status = status;
+      }
+
+      if (startDate || endDate) {
+        filters.createdAt = {};
+        if (startDate) {
+          filters.createdAt.$gte = new Date(startDate as string).toISOString();
+        }
+        if (endDate) {
+          filters.createdAt.$lte = new Date(endDate as string).toISOString();
+        }
+      }
+
+      if (search) {
+        filters.$or = [
+          { user: { username: { $containsi: search } } },
+          { user: { email: { $containsi: search } } },
+          { shipping_address: { $containsi: search } },
+          { phone: { $containsi: search } }
+        ];
+      }
+
+      // Fetch all orders without pagination for export
+      const orders = await strapi.entityService.findMany('api::order.order', {
+        filters,
+        sort: 'createdAt:desc',
+        populate: {
+          order_items: {
+            populate: {
+              book: {
+                populate: ['categories', 'authors']
+              }
+            }
+          },
+          user: true
+        }
+      });
+
+      // Generate CSV content
+      const csvHeaders = [
+        'Order ID',
+        'Document ID',
+        'Order Date',
+        'Customer Name',
+        'Customer Email',
+        'Customer Phone',
+        'Status',
+        'Total Amount',
+        'Shipping Address',
+        'Books',
+        'Quantities',
+        'Notes'
+      ];
+
+      const csvRows = orders.map((order: any) => {
+        const books = order.order_items?.map((item: any) => item.book?.name || 'Unknown').join('; ') || '';
+        const quantities = order.order_items?.map((item: any) => item.quantity || 0).join('; ') || '';
+
+        return [
+          order.id || '',
+          order.documentId || '',
+          order.createdAt ? new Date(order.createdAt).toLocaleDateString() : '',
+          order.user?.username || '',
+          order.user?.email || '',
+          order.phone || '',
+          order.status || '',
+          order.total_amount || 0,
+          order.shipping_address || '',
+          books,
+          quantities,
+          order.notes || ''
+        ];
+      });
+
+      // Create CSV content
+      const csvContent = [
+        csvHeaders.join(','),
+        ...csvRows.map(row => row.map(field => `"${String(field).replace(/"/g, '""')}"`).join(','))
+      ].join('\n');
+
+      // Set response headers for CSV download
+      ctx.set('Content-Type', 'text/csv');
+      ctx.set('Content-Disposition', `attachment; filename="orders-export-${new Date().toISOString().split('T')[0]}.csv"`);
+
+      return ctx.send(csvContent);
+    } catch (error) {
+      console.error('Error exporting orders:', error);
+      return ctx.badRequest('Error exporting orders', { error: error.message });
     }
   },
 
