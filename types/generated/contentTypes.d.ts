@@ -1189,10 +1189,10 @@ export interface PluginUsersPermissionsUser
   };
   options: {
     draftAndPublish: false;
-    timestamps: true;
   };
   attributes: {
     address: Schema.Attribute.Text;
+    avatar: Schema.Attribute.Media<'images' | 'files'>;
     birthday: Schema.Attribute.Date;
     blocked: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
     city: Schema.Attribute.String;

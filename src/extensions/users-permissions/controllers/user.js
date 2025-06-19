@@ -5,6 +5,177 @@ const { getService } = require('@strapi/plugin-users-permissions/server/utils');
 
 module.exports = {
   /**
+   * Create a new user with comprehensive profile information
+   */
+  async create(ctx) {
+    const { body } = ctx.request;
+
+    // Validate required fields
+    if (!body.username) {
+      return ctx.badRequest('Username is required');
+    }
+    if (!body.email) {
+      return ctx.badRequest('Email is required');
+    }
+    if (!body.password) {
+      return ctx.badRequest('Password is required');
+    }
+
+    try {
+      // Check if username already exists
+      const existingUserByUsername = await strapi.db.query('plugin::users-permissions.user').findOne({
+        where: { username: body.username }
+      });
+
+      if (existingUserByUsername) {
+        return ctx.badRequest('Username already taken');
+      }
+
+      // Check if email already exists
+      const existingUserByEmail = await strapi.db.query('plugin::users-permissions.user').findOne({
+        where: { email: body.email.toLowerCase() }
+      });
+
+      if (existingUserByEmail) {
+        return ctx.badRequest('Email already taken');
+      }
+
+      // Get default authenticated role
+      const defaultRole = await strapi.db.query('plugin::users-permissions.role').findOne({
+        where: { type: 'authenticated' }
+      });
+
+      // Prepare user data with all allowed fields
+      const userData = {
+        username: body.username,
+        email: body.email.toLowerCase(),
+        password: body.password,
+        confirmed: true,
+        blocked: false,
+        provider: 'local',
+        role: body.role || defaultRole?.id,
+        // Optional profile fields
+        date_of_birth: body.date_of_birth || null,
+        address: body.address || null,
+        phone: body.phone || null,
+        facebook: body.facebook || null,
+        twitter: body.twitter || null,
+        city: body.city || null,
+        country: body.country || null,
+        gender: body.gender || null,
+      };
+
+      // Create the user
+      const newUser = await strapi.entityService.create('plugin::users-permissions.user', {
+        data: userData,
+        populate: ['role']
+      });
+
+      // Sanitize the response
+      const sanitizedUser = await sanitize.contentAPI.output(newUser, strapi.getModel('plugin::users-permissions.user'));
+
+      return ctx.send({
+        data: sanitizedUser,
+        message: 'User created successfully'
+      });
+    } catch (error) {
+      console.error('Error creating user:', error);
+      return ctx.badRequest('Error creating user', { error: error.message });
+    }
+  },
+
+  /**
+   * Update a user with comprehensive profile information
+   */
+  async update(ctx) {
+    const { id } = ctx.params;
+    const { body } = ctx.request;
+
+    try {
+      // Find the user first
+      let user;
+      if (isNaN(id)) {
+        // documentId
+        user = await strapi.db.query('plugin::users-permissions.user').findOne({
+          where: { documentId: id }
+        });
+      } else {
+        // numeric ID
+        user = await strapi.db.query('plugin::users-permissions.user').findOne({
+          where: { id: parseInt(id) }
+        });
+      }
+
+      if (!user) {
+        return ctx.notFound('User not found');
+      }
+
+      // Prepare update data with all allowed fields
+      const updateData = {};
+
+      // Basic fields (optional for update)
+      if (body.username !== undefined) {
+        // Check if username is already taken by another user
+        const existingUser = await strapi.db.query('plugin::users-permissions.user').findOne({
+          where: {
+            username: body.username,
+            id: { $ne: user.id }
+          }
+        });
+        if (existingUser) {
+          return ctx.badRequest('Username already taken');
+        }
+        updateData.username = body.username;
+      }
+
+      if (body.email !== undefined) {
+        // Check if email is already taken by another user
+        const existingUser = await strapi.db.query('plugin::users-permissions.user').findOne({
+          where: {
+            email: body.email.toLowerCase(),
+            id: { $ne: user.id }
+          }
+        });
+        if (existingUser) {
+          return ctx.badRequest('Email already taken');
+        }
+        updateData.email = body.email.toLowerCase();
+      }
+
+      if (body.password !== undefined) {
+        updateData.password = body.password;
+      }
+
+      // Profile fields
+      if (body.date_of_birth !== undefined) updateData.date_of_birth = body.date_of_birth;
+      if (body.address !== undefined) updateData.address = body.address;
+      if (body.phone !== undefined) updateData.phone = body.phone;
+      if (body.facebook !== undefined) updateData.facebook = body.facebook;
+      if (body.twitter !== undefined) updateData.twitter = body.twitter;
+      if (body.city !== undefined) updateData.city = body.city;
+      if (body.country !== undefined) updateData.country = body.country;
+      if (body.gender !== undefined) updateData.gender = body.gender;
+
+      // Update the user
+      const updatedUser = await strapi.entityService.update('plugin::users-permissions.user', user.id, {
+        data: updateData,
+        populate: ['role']
+      });
+
+      // Sanitize the response
+      const sanitizedUser = await sanitize.contentAPI.output(updatedUser, strapi.getModel('plugin::users-permissions.user'));
+
+      return ctx.send({
+        data: sanitizedUser,
+        message: 'User updated successfully'
+      });
+    } catch (error) {
+      console.error('Error updating user:', error);
+      return ctx.badRequest('Error updating user', { error: error.message });
+    }
+  },
+
+  /**
    * Delete a user
    */
   async delete(ctx) {

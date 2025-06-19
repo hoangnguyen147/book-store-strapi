@@ -101,9 +101,16 @@ module.exports = {
 
       const jwt = getService('jwt').issue(_.pick(createdUser, ['id']));
 
+      // Fetch user with role information for response
+      const userWithRole = await strapi.entityService.findOne('plugin::users-permissions.user', createdUser.id, {
+        populate: ['role']
+      });
+
+      const sanitizedUserWithRole = await sanitize.contentAPI.output(userWithRole, strapi.getModel('plugin::users-permissions.user'));
+
       return ctx.send({
         jwt,
-        user: sanitizedCreatedUser,
+        user: sanitizedUserWithRole,
       });
     } catch (err) {
       if (err.details?.errors) {
@@ -112,5 +119,88 @@ module.exports = {
       }
       throw new ApplicationError(err.message);
     }
+  },
+
+  /**
+   * Override the default login method to include role information in response
+   */
+  async callback(ctx) {
+    const provider = ctx.params.provider || 'local';
+    const params = ctx.request.body;
+
+    const store = await strapi.store({
+      type: 'plugin',
+      name: 'users-permissions',
+    });
+
+    if (provider === 'local') {
+      if (!_.get(await store.get({ key: 'grant' }), 'email.enabled')) {
+        throw new ApplicationError('This provider is disabled');
+      }
+
+      const { identifier } = params;
+
+      // Check format of provided identifier
+      const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier);
+
+      if (isEmail) {
+        params.email = params.identifier;
+      } else {
+        params.username = params.identifier;
+      }
+
+      const query = strapi.db.query('plugin::users-permissions.user');
+
+      const user = await query.findOne({
+        where: {
+          provider,
+          $or: [
+            { email: params.email?.toLowerCase() },
+            { username: params.username },
+          ],
+        },
+        populate: ['role'] // Include role in the query
+      });
+
+      if (!user) {
+        throw new ValidationError('Invalid identifier or password');
+      }
+
+      if (
+        _.get(await store.get({ key: 'advanced' }), 'email_confirmation') &&
+        user.confirmed !== true
+      ) {
+        throw new ApplicationError('Your account email is not confirmed');
+      }
+
+      if (user.blocked === true) {
+        throw new ApplicationError('Your account has been blocked by an administrator');
+      }
+
+      // The user never authenticated with the `local` provider.
+      if (!user.password) {
+        throw new ApplicationError(
+          'This user never set a local password, please login with the provider used during account creation'
+        );
+      }
+
+      const validPassword = await getService('user').validatePassword(
+        params.password,
+        user.password
+      );
+
+      if (!validPassword) {
+        throw new ValidationError('Invalid identifier or password');
+      } else {
+        const sanitizedUser = await sanitize.contentAPI.output(user, strapi.getModel('plugin::users-permissions.user'));
+
+        return ctx.send({
+          jwt: getService('jwt').issue({ id: user.id }),
+          user: sanitizedUser,
+        });
+      }
+    }
+
+    throw new ApplicationError(`Unknown provider: ${provider}`);
   },
 };

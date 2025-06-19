@@ -9,8 +9,7 @@
     "displayName": "User"
   },
   "options": {
-    "draftAndPublish": false,
-    "timestamps": true
+    "draftAndPublish": false
   },
   "attributes": {
     "username": {
@@ -89,10 +88,22 @@
     },
     "gender": {
       "type": "enumeration",
-      "enum": ["male", "female", "other"]
+      "enum": [
+        "male",
+        "female",
+        "other"
+      ]
     },
     "country": {
       "type": "string"
+    },
+    "avatar": {
+      "allowedTypes": [
+        "images",
+        "files"
+      ],
+      "type": "media",
+      "multiple": false
     }
   }
 }

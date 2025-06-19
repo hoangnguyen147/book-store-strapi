@@ -3,6 +3,24 @@
 module.exports = {
   routes: [
     {
+      method: 'POST',
+      path: '/users',
+      handler: 'user.create',
+      config: {
+        policies: [],
+        middlewares: [],
+      },
+    },
+    {
+      method: 'PUT',
+      path: '/users/:id',
+      handler: 'user.update',
+      config: {
+        policies: [],
+        middlewares: [],
+      },
+    },
+    {
       method: 'DELETE',
       path: '/users/delete/:id',
       handler: 'user.delete',

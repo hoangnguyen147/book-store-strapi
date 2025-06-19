@@ -296,6 +296,186 @@ This endpoint allows you to create a complete order with multiple books and quan
                 }
               }
             },
+            '/auth/local': {
+              post: {
+                tags: ['Authentication'],
+                summary: 'Login with email/username and password',
+                description: 'Authenticate user and receive JWT token with complete user profile including role information',
+                requestBody: {
+                  required: true,
+                  content: {
+                    'application/json': {
+                      schema: {
+                        type: 'object',
+                        required: ['identifier', 'password'],
+                        properties: {
+                          identifier: {
+                            type: 'string',
+                            description: 'Email or username',
+                            example: 'user@example.com'
+                          },
+                          password: {
+                            type: 'string',
+                            description: 'User password',
+                            example: 'password123'
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                responses: {
+                  200: {
+                    description: 'Login successful with user profile and role information',
+                    content: {
+                      'application/json': {
+                        schema: {
+                          type: 'object',
+                          properties: {
+                            jwt: {
+                              type: 'string',
+                              description: 'JWT token for authentication',
+                              example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+                            },
+                            user: {
+                              allOf: [
+                                { $ref: '#/components/schemas/User' },
+                                {
+                                  type: 'object',
+                                  properties: {
+                                    role: {
+                                      type: 'object',
+                                      properties: {
+                                        id: { type: 'integer', example: 1 },
+                                        name: { type: 'string', example: 'Authenticated' },
+                                        type: { type: 'string', example: 'authenticated' },
+                                        description: { type: 'string', example: 'Default role given to authenticated user.' }
+                                      },
+                                      description: 'Complete user role information'
+                                    }
+                                  }
+                                }
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  400: {
+                    description: 'Invalid credentials',
+                    content: {
+                      'application/json': {
+                        schema: {
+                          type: 'object',
+                          properties: {
+                            error: {
+                              type: 'object',
+                              properties: {
+                                message: { type: 'string', example: 'Invalid identifier or password' }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            '/auth/local/register': {
+              post: {
+                tags: ['Authentication'],
+                summary: 'Register new user account',
+                description: 'Create a new user account and receive JWT token with user profile including role information',
+                requestBody: {
+                  required: true,
+                  content: {
+                    'application/json': {
+                      schema: {
+                        type: 'object',
+                        required: ['username', 'email', 'password'],
+                        properties: {
+                          username: {
+                            type: 'string',
+                            description: 'Unique username',
+                            example: 'john_doe'
+                          },
+                          email: {
+                            type: 'string',
+                            format: 'email',
+                            description: 'User email address',
+                            example: 'john@example.com'
+                          },
+                          password: {
+                            type: 'string',
+                            description: 'User password (minimum 6 characters)',
+                            example: 'password123'
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                responses: {
+                  200: {
+                    description: 'Registration successful with user profile and role information',
+                    content: {
+                      'application/json': {
+                        schema: {
+                          type: 'object',
+                          properties: {
+                            jwt: {
+                              type: 'string',
+                              description: 'JWT token for authentication',
+                              example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+                            },
+                            user: {
+                              allOf: [
+                                { $ref: '#/components/schemas/User' },
+                                {
+                                  type: 'object',
+                                  properties: {
+                                    role: {
+                                      type: 'object',
+                                      properties: {
+                                        id: { type: 'integer', example: 1 },
+                                        name: { type: 'string', example: 'Authenticated' },
+                                        type: { type: 'string', example: 'authenticated' },
+                                        description: { type: 'string', example: 'Default role given to authenticated user.' }
+                                      },
+                                      description: 'Complete user role information'
+                                    }
+                                  }
+                                }
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  400: {
+                    description: 'Registration failed - validation errors',
+                    content: {
+                      'application/json': {
+                        schema: {
+                          type: 'object',
+                          properties: {
+                            error: {
+                              type: 'object',
+                              properties: {
+                                message: { type: 'string', example: 'Email or Username are already taken' }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
             '/books/trendy': {
               get: {
                 tags: ['Book - Custom'],
@@ -760,18 +940,349 @@ This endpoint allows you to create a complete order with multiple books and quan
                 }
               }
             },
+            '/users': {
+              post: {
+                tags: ['User Management'],
+                summary: 'Create a new user',
+                description: 'Create a new user with comprehensive profile information. Only username, email, and password are required.',
+                security: [{ bearerAuth: [] }],
+                requestBody: {
+                  required: true,
+                  content: {
+                    'application/json': {
+                      schema: {
+                        type: 'object',
+                        required: ['username', 'email', 'password'],
+                        properties: {
+                          username: {
+                            type: 'string',
+                            minLength: 3,
+                            description: 'Unique username (required)',
+                            example: 'john_doe'
+                          },
+                          email: {
+                            type: 'string',
+                            format: 'email',
+                            description: 'User email address (required)',
+                            example: 'john@example.com'
+                          },
+                          password: {
+                            type: 'string',
+                            minLength: 6,
+                            description: 'User password (required, minimum 6 characters)',
+                            example: 'SecurePass123'
+                          },
+                          date_of_birth: {
+                            type: 'string',
+                            format: 'date',
+                            description: 'Date of birth (optional)',
+                            example: '1990-01-15'
+                          },
+                          address: {
+                            type: 'string',
+                            description: 'Full address (optional)',
+                            example: '123 Nguyen Hue Street, District 1'
+                          },
+                          phone: {
+                            type: 'string',
+                            description: 'Phone number (optional)',
+                            example: '+84901234567'
+                          },
+                          facebook: {
+                            type: 'string',
+                            description: 'Facebook profile URL (optional)',
+                            example: 'https://facebook.com/johndoe'
+                          },
+                          twitter: {
+                            type: 'string',
+                            description: 'Twitter profile URL (optional)',
+                            example: 'https://twitter.com/johndoe'
+                          },
+                          city: {
+                            type: 'string',
+                            description: 'City (optional)',
+                            example: 'Ho Chi Minh City'
+                          },
+                          country: {
+                            type: 'string',
+                            description: 'Country (optional)',
+                            example: 'Vietnam'
+                          },
+                          gender: {
+                            type: 'string',
+                            enum: ['male', 'female', 'other'],
+                            description: 'Gender (optional)',
+                            example: 'male'
+                          }
+                        }
+                      },
+                      examples: {
+                        'minimal-user': {
+                          summary: 'Minimal user creation (required fields only)',
+                          value: {
+                            username: 'john_doe',
+                            email: 'john@example.com',
+                            password: 'SecurePass123'
+                          }
+                        },
+                        'complete-user': {
+                          summary: 'Complete user profile',
+                          value: {
+                            username: 'jane_smith',
+                            email: 'jane@example.com',
+                            password: 'SecurePass123',
+                            date_of_birth: '1992-05-20',
+                            address: '456 Le Loi Street, District 3',
+                            phone: '+84987654321',
+                            facebook: 'https://facebook.com/janesmith',
+                            twitter: 'https://twitter.com/janesmith',
+                            city: 'Ho Chi Minh City',
+                            country: 'Vietnam',
+                            gender: 'female'
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                responses: {
+                  200: {
+                    description: 'User created successfully',
+                    content: {
+                      'application/json': {
+                        schema: {
+                          type: 'object',
+                          properties: {
+                            data: { $ref: '#/components/schemas/User' },
+                            message: { type: 'string', example: 'User created successfully' }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  400: {
+                    description: 'Bad request - validation errors',
+                    content: {
+                      'application/json': {
+                        schema: {
+                          type: 'object',
+                          properties: {
+                            error: {
+                              type: 'object',
+                              properties: {
+                                message: {
+                                  type: 'string',
+                                  example: 'Username already taken'
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  401: { description: 'Authentication required' }
+                }
+              }
+            },
+            '/users/{id}': {
+              put: {
+                tags: ['User Management'],
+                summary: 'Update user information',
+                description: 'Update user profile with comprehensive information. All fields are optional for updates. **Important:** Use documentId (24-character string) for the id parameter, not numeric ID.',
+                security: [{ bearerAuth: [] }],
+                parameters: [
+                  {
+                    name: 'id',
+                    in: 'path',
+                    required: true,
+                    schema: {
+                      type: 'string',
+                      pattern: '^[a-z0-9]{24}$',
+                      example: 'pd6qqd1cix4pyhai5ya8xz7y'
+                    },
+                    description: 'User documentId (24-character alphanumeric string, not integer ID)'
+                  }
+                ],
+                requestBody: {
+                  required: true,
+                  content: {
+                    'application/json': {
+                      schema: {
+                        type: 'object',
+                        properties: {
+                          username: {
+                            type: 'string',
+                            minLength: 3,
+                            description: 'Update username (optional)',
+                            example: 'new_username'
+                          },
+                          email: {
+                            type: 'string',
+                            format: 'email',
+                            description: 'Update email address (optional)',
+                            example: 'newemail@example.com'
+                          },
+                          password: {
+                            type: 'string',
+                            minLength: 6,
+                            description: 'Update password (optional)',
+                            example: 'NewSecurePass123'
+                          },
+                          date_of_birth: {
+                            type: 'string',
+                            format: 'date',
+                            description: 'Update date of birth (optional)',
+                            example: '1990-01-15'
+                          },
+                          address: {
+                            type: 'string',
+                            description: 'Update address (optional)',
+                            example: '789 Dong Khoi Street, District 1'
+                          },
+                          phone: {
+                            type: 'string',
+                            description: 'Update phone number (optional)',
+                            example: '+84912345678'
+                          },
+                          facebook: {
+                            type: 'string',
+                            description: 'Update Facebook profile URL (optional)',
+                            example: 'https://facebook.com/newprofile'
+                          },
+                          twitter: {
+                            type: 'string',
+                            description: 'Update Twitter profile URL (optional)',
+                            example: 'https://twitter.com/newprofile'
+                          },
+                          city: {
+                            type: 'string',
+                            description: 'Update city (optional)',
+                            example: 'Hanoi'
+                          },
+                          country: {
+                            type: 'string',
+                            description: 'Update country (optional)',
+                            example: 'Vietnam'
+                          },
+                          gender: {
+                            type: 'string',
+                            enum: ['male', 'female', 'other'],
+                            description: 'Update gender (optional)',
+                            example: 'other'
+                          }
+                        }
+                      },
+                      examples: {
+                        'update-profile': {
+                          summary: 'Update profile information',
+                          value: {
+                            phone: '+84912345678',
+                            city: 'Hanoi',
+                            address: '789 Dong Khoi Street, District 1'
+                          }
+                        },
+                        'update-credentials': {
+                          summary: 'Update username and email',
+                          value: {
+                            username: 'new_username',
+                            email: 'newemail@example.com'
+                          }
+                        },
+                        'update-password': {
+                          summary: 'Update password only',
+                          value: {
+                            password: 'NewSecurePass123'
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                responses: {
+                  200: {
+                    description: 'User updated successfully',
+                    content: {
+                      'application/json': {
+                        schema: {
+                          type: 'object',
+                          properties: {
+                            data: { $ref: '#/components/schemas/User' },
+                            message: { type: 'string', example: 'User updated successfully' }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  400: {
+                    description: 'Bad request - validation errors',
+                    content: {
+                      'application/json': {
+                        schema: {
+                          type: 'object',
+                          properties: {
+                            error: {
+                              type: 'object',
+                              properties: {
+                                message: {
+                                  type: 'string',
+                                  example: 'Email already taken'
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  401: { description: 'Authentication required' },
+                  404: { description: 'User not found' }
+                }
+              }
+            },
             '/users/me': {
               get: {
                 tags: ['User Profile'],
                 summary: 'Get my profile',
-                description: 'Get the profile of the currently authenticated user',
+                description: 'Get the complete profile of the currently authenticated user including role information',
                 security: [{ bearerAuth: [] }],
                 responses: {
                   '200': {
-                    description: 'User profile',
+                    description: 'User profile with complete role information',
                     content: {
                       'application/json': {
-                        schema: { $ref: '#/components/schemas/User' }
+                        schema: {
+                          allOf: [
+                            { $ref: '#/components/schemas/User' },
+                            {
+                              type: 'object',
+                              properties: {
+                                role: {
+                                  type: 'object',
+                                  properties: {
+                                    id: { type: 'integer', example: 1 },
+                                    name: { type: 'string', example: 'Authenticated' },
+                                    type: { type: 'string', example: 'authenticated' },
+                                    description: { type: 'string', example: 'Default role given to authenticated user.' },
+                                    permissions: {
+                                      type: 'array',
+                                      items: {
+                                        type: 'object',
+                                        properties: {
+                                          id: { type: 'integer' },
+                                          action: { type: 'string' },
+                                          subject: { type: 'string' }
+                                        }
+                                      },
+                                      description: 'User permissions based on role'
+                                    }
+                                  },
+                                  description: 'Complete user role information with permissions'
+                                }
+                              }
+                            }
+                          ]
+                        }
                       }
                     }
                   },
@@ -1603,33 +2114,109 @@ This endpoint generates a comprehensive revenue report for a specified date rang
             },
             User: {
               type: 'object',
+              description: 'Complete user profile with all available fields',
               properties: {
-                id: { type: 'integer', example: 1 },
-                documentId: { type: 'string', example: 'user123abc' },
-                username: { type: 'string', example: 'john_doe' },
-                email: { type: 'string', format: 'email', example: 'john@example.com' },
-                confirmed: { type: 'boolean', example: true },
-                blocked: { type: 'boolean', example: false },
+                id: { type: 'integer', example: 1, description: 'Numeric user ID' },
+                documentId: { type: 'string', example: 'pd6qqd1cix4pyhai5ya8xz7y', description: '24-character document ID' },
+                username: {
+                  type: 'string',
+                  example: 'john_doe',
+                  description: 'Unique username (required for creation)'
+                },
+                email: {
+                  type: 'string',
+                  format: 'email',
+                  example: 'john@example.com',
+                  description: 'User email address (required for creation)'
+                },
+                confirmed: {
+                  type: 'boolean',
+                  example: true,
+                  description: 'Whether user email is confirmed'
+                },
+                blocked: {
+                  type: 'boolean',
+                  example: false,
+                  description: 'Whether user account is blocked'
+                },
+                provider: {
+                  type: 'string',
+                  example: 'local',
+                  description: 'Authentication provider (local, google, etc.)'
+                },
                 role: {
                   type: 'object',
                   properties: {
                     id: { type: 'integer', example: 1 },
                     name: { type: 'string', example: 'Authenticated' },
-                    type: { type: 'string', example: 'authenticated' }
+                    type: { type: 'string', example: 'authenticated' },
+                    description: { type: 'string', example: 'Default role given to authenticated user.' }
                   },
-                  description: 'User role information'
+                  description: 'User role information with permissions'
                 },
-                city: { type: 'string', example: 'Ho Chi Minh City' },
-                country: { type: 'string', example: 'Vietnam' },
-                address: { type: 'string', example: '123 Nguyen Hue Street' },
-                phone: { type: 'string', example: '+84901234567' },
-                birthday: { type: 'string', format: 'date', example: '1990-01-01' },
-                date_of_birth: { type: 'string', format: 'date', example: '1990-01-01' },
-                gender: { type: 'string', enum: ['male', 'female', 'other'], example: 'male' },
-                facebook: { type: 'string', example: 'https://facebook.com/johndoe' },
-                twitter: { type: 'string', example: 'https://twitter.com/johndoe' },
-                createdAt: { type: 'string', format: 'date-time' },
-                updatedAt: { type: 'string', format: 'date-time' }
+                date_of_birth: {
+                  type: 'string',
+                  format: 'date',
+                  example: '1990-01-15',
+                  description: 'Date of birth (optional)'
+                },
+                address: {
+                  type: 'string',
+                  example: '123 Nguyen Hue Street, District 1',
+                  description: 'Full address (optional)'
+                },
+                phone: {
+                  type: 'string',
+                  example: '+84901234567',
+                  description: 'Phone number (optional)'
+                },
+                facebook: {
+                  type: 'string',
+                  example: 'https://facebook.com/johndoe',
+                  description: 'Facebook profile URL (optional)'
+                },
+                twitter: {
+                  type: 'string',
+                  example: 'https://twitter.com/johndoe',
+                  description: 'Twitter profile URL (optional)'
+                },
+                city: {
+                  type: 'string',
+                  example: 'Ho Chi Minh City',
+                  description: 'City (optional)'
+                },
+                country: {
+                  type: 'string',
+                  example: 'Vietnam',
+                  description: 'Country (optional)'
+                },
+                gender: {
+                  type: 'string',
+                  enum: ['male', 'female', 'other'],
+                  example: 'male',
+                  description: 'Gender (optional)'
+                },
+                birthday: {
+                  type: 'string',
+                  format: 'date',
+                  example: '1990-01-01',
+                  description: 'Birthday field (legacy, use date_of_birth instead)'
+                },
+                createdAt: {
+                  type: 'string',
+                  format: 'date-time',
+                  description: 'Account creation timestamp'
+                },
+                updatedAt: {
+                  type: 'string',
+                  format: 'date-time',
+                  description: 'Last update timestamp'
+                },
+                publishedAt: {
+                  type: 'string',
+                  format: 'date-time',
+                  description: 'Publication timestamp'
+                }
               }
             },
             UserProfileInput: {
