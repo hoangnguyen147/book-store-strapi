@@ -102,8 +102,12 @@ module.exports = {
       const jwt = getService('jwt').issue(_.pick(createdUser, ['id']));
 
       // Fetch user with role information for response
-      const userWithRole = await strapi.entityService.findOne('plugin::users-permissions.user', createdUser.id, {
-        populate: ['role']
+      const userWithRole = await strapi.db.query('plugin::users-permissions.user').findOne({
+        where: { id: userId },
+        populate: {
+          role: true,
+          avatar: true
+        }
       });
 
       // Create a custom sanitized user object that includes role

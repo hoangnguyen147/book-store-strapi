@@ -14,7 +14,7 @@
       "name": "MIT",
       "url": "https://opensource.org/licenses/MIT"
     },
-    "x-generation-date": "2025-06-20T12:37:24.406Z"
+    "x-generation-date": "2025-06-20T18:05:37.252Z"
   },
   "x-strapi-config": {
     "plugins": [
@@ -2016,23 +2016,189 @@
             "description": "Authentication required"
           }
         }
-      }
-    },
-    "/user-management/profile/{documentId}": {
-      "get": {
+      },
+      "post": {
+        "summary": "Create new user",
+        "description": "Create a new user with comprehensive profile information including all custom fields and avatar support",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "User Management"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "username",
+                  "email",
+                  "password"
+                ],
+                "properties": {
+                  "username": {
+                    "type": "string",
+                    "minLength": 3,
+                    "description": "Unique username (minimum 3 characters)",
+                    "example": "john_doe"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "description": "User email address",
+                    "example": "john@example.com"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 6,
+                    "description": "User password (minimum 6 characters)",
+                    "example": "password123"
+                  },
+                  "role": {
+                    "type": "integer",
+                    "description": "Role ID (optional, defaults to authenticated role)",
+                    "example": 1
+                  },
+                  "confirmed": {
+                    "type": "boolean",
+                    "description": "Email confirmation status (optional, defaults to true)",
+                    "example": true
+                  },
+                  "blocked": {
+                    "type": "boolean",
+                    "description": "User blocked status (optional, defaults to false)",
+                    "example": false
+                  },
+                  "date_of_birth": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "Date of birth (optional)",
+                    "example": "1990-01-15"
+                  },
+                  "birthday": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "Birthday (optional)",
+                    "example": "1990-01-15"
+                  },
+                  "address": {
+                    "type": "string",
+                    "description": "Full address (optional)",
+                    "example": "123 Main Street, City, Country"
+                  },
+                  "phone": {
+                    "type": "string",
+                    "description": "Phone number (optional)",
+                    "example": "+1234567890"
+                  },
+                  "facebook": {
+                    "type": "string",
+                    "description": "Facebook profile URL (optional)",
+                    "example": "https://facebook.com/johndoe"
+                  },
+                  "twitter": {
+                    "type": "string",
+                    "description": "Twitter profile URL (optional)",
+                    "example": "https://twitter.com/johndoe"
+                  },
+                  "city": {
+                    "type": "string",
+                    "description": "City (optional)",
+                    "example": "New York"
+                  },
+                  "country": {
+                    "type": "string",
+                    "description": "Country (optional)",
+                    "example": "United States"
+                  },
+                  "gender": {
+                    "type": "string",
+                    "enum": ["male", "female", "other"],
+                    "description": "Gender (optional)",
+                    "example": "male"
+                  },
+                  "avatar": {
+                    "type": "integer",
+                    "description": "Avatar media ID (optional, upload file first to get ID)",
+                    "example": 123
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "User created successfully with complete profile information",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UserManagementResponse"
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "allOf": [
+                        {
+                          "$ref": "#/components/schemas/User"
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "role": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "integer",
+                                  "example": 1
+                                },
+                                "documentId": {
+                                  "type": "string",
+                                  "example": "zief58ukflhaf8dw1firc128"
+                                },
+                                "name": {
+                                  "type": "string",
+                                  "example": "Authenticated"
+                                },
+                                "type": {
+                                  "type": "string",
+                                  "example": "authenticated"
+                                },
+                                "description": {
+                                  "type": "string",
+                                  "example": "Default role given to authenticated user."
+                                }
+                              },
+                              "description": "Complete user role information"
+                            },
+                            "avatar": {
+                              "oneOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "$ref": "#/components/schemas/UploadFile"
+                                }
+                              ],
+                              "description": "User avatar image (null if not set)"
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "User created successfully"
+                    }
+                  }
                 }
               }
             }
           },
           "400": {
-            "description": "Bad Request",
+            "description": "Bad Request - validation errors or duplicate username/email",
             "content": {
               "application/json": {
                 "schema": {
@@ -2042,7 +2208,7 @@
             }
           },
           "401": {
-            "description": "Unauthorized",
+            "description": "Unauthorized - authentication required",
             "content": {
               "application/json": {
                 "schema": {
@@ -2052,27 +2218,7 @@
             }
           },
           "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
+            "description": "Forbidden - insufficient permissions",
             "content": {
               "application/json": {
                 "schema": {
@@ -2081,25 +2227,7 @@
               }
             }
           }
-        },
-        "tags": [
-          "User Management"
-        ],
-        "parameters": [
-          {
-            "name": "documentId",
-            "in": "path",
-            "description": "User documentId (24-character alphanumeric string) or numeric ID for backward compatibility",
-            "deprecated": false,
-            "required": true,
-            "schema": {
-              "type": "string",
-              "pattern": "^[a-z0-9]{24}$|^[0-9]+$",
-              "example": "eahn47d9y3li58itka1qtnbg"
-            }
-          }
-        ],
-        "operationId": "get/user-management/profile/{documentId}"
+        }
       }
     },
     "/upload": {
@@ -2310,12 +2438,12 @@
                   "identifier": {
                     "type": "string",
                     "description": "Email or username",
-                    "example": "user@example.com"
+                    "example": "admin"
                   },
                   "password": {
                     "type": "string",
                     "description": "User password",
-                    "example": "password123"
+                    "example": "adminPass123"
                   }
                 }
               }
@@ -3080,250 +3208,6 @@
                 }
               }
             }
-          }
-        }
-      }
-    },
-    "/users": {
-      "post": {
-        "tags": [
-          "User Management"
-        ],
-        "summary": "Create a new user",
-        "description": "Create a new user with comprehensive profile information. Only username, email, and password are required.",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "required": [
-                  "username",
-                  "email",
-                  "password"
-                ],
-                "properties": {
-                  "username": {
-                    "type": "string",
-                    "minLength": 3,
-                    "description": "Unique username (required)",
-                    "example": "john_doe"
-                  },
-                  "email": {
-                    "type": "string",
-                    "format": "email",
-                    "description": "User email address (required)",
-                    "example": "john@example.com"
-                  },
-                  "password": {
-                    "type": "string",
-                    "minLength": 6,
-                    "description": "User password (required, minimum 6 characters)",
-                    "example": "SecurePass123"
-                  },
-                  "date_of_birth": {
-                    "type": "string",
-                    "format": "date",
-                    "description": "Date of birth (optional)",
-                    "example": "1990-01-15"
-                  },
-                  "address": {
-                    "type": "string",
-                    "description": "Full address (optional)",
-                    "example": "123 Nguyen Hue Street, District 1"
-                  },
-                  "phone": {
-                    "type": "string",
-                    "description": "Phone number (optional)",
-                    "example": "+84901234567"
-                  },
-                  "facebook": {
-                    "type": "string",
-                    "description": "Facebook profile URL (optional)",
-                    "example": "https://facebook.com/johndoe"
-                  },
-                  "twitter": {
-                    "type": "string",
-                    "description": "Twitter profile URL (optional)",
-                    "example": "https://twitter.com/johndoe"
-                  },
-                  "city": {
-                    "type": "string",
-                    "description": "City (optional)",
-                    "example": "Ho Chi Minh City"
-                  },
-                  "country": {
-                    "type": "string",
-                    "description": "Country (optional)",
-                    "example": "Vietnam"
-                  },
-                  "gender": {
-                    "type": "string",
-                    "enum": [
-                      "male",
-                      "female",
-                      "other"
-                    ],
-                    "description": "Gender (optional)",
-                    "example": "male"
-                  }
-                }
-              },
-              "examples": {
-                "minimal-user": {
-                  "summary": "Minimal user creation (required fields only)",
-                  "value": {
-                    "username": "john_doe",
-                    "email": "john@example.com",
-                    "password": "SecurePass123"
-                  }
-                },
-                "complete-user": {
-                  "summary": "Complete user profile",
-                  "value": {
-                    "username": "jane_smith",
-                    "email": "jane@example.com",
-                    "password": "SecurePass123",
-                    "date_of_birth": "1992-05-20",
-                    "address": "456 Le Loi Street, District 3",
-                    "phone": "+84987654321",
-                    "facebook": "https://facebook.com/janesmith",
-                    "twitter": "https://twitter.com/janesmith",
-                    "city": "Ho Chi Minh City",
-                    "country": "Vietnam",
-                    "gender": "female"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "User created successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "$ref": "#/components/schemas/User"
-                    },
-                    "message": {
-                      "type": "string",
-                      "example": "User created successfully"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad request - validation errors",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "object",
-                      "properties": {
-                        "message": {
-                          "type": "string",
-                          "example": "Username already taken"
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Authentication required"
-          }
-        }
-      }
-    },
-    "/users/me": {
-      "get": {
-        "tags": [
-          "User Profile"
-        ],
-        "summary": "Get my profile",
-        "description": "Get the complete profile of the currently authenticated user including role information",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "User profile with complete role information",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "allOf": [
-                    {
-                      "$ref": "#/components/schemas/User"
-                    },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "role": {
-                          "type": "object",
-                          "properties": {
-                            "id": {
-                              "type": "integer",
-                              "example": 1
-                            },
-                            "name": {
-                              "type": "string",
-                              "example": "Authenticated"
-                            },
-                            "type": {
-                              "type": "string",
-                              "example": "authenticated"
-                            },
-                            "description": {
-                              "type": "string",
-                              "example": "Default role given to authenticated user."
-                            },
-                            "permissions": {
-                              "type": "array",
-                              "items": {
-                                "type": "object",
-                                "properties": {
-                                  "id": {
-                                    "type": "integer"
-                                  },
-                                  "action": {
-                                    "type": "string"
-                                  },
-                                  "subject": {
-                                    "type": "string"
-                                  }
-                                }
-                              },
-                              "description": "User permissions based on role"
-                            }
-                          },
-                          "description": "Complete user role information with permissions"
-                        }
-                      }
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Authentication required"
           }
         }
       }
@@ -4644,6 +4528,411 @@
         "operationId": "delete/orders/{id}"
       }
     },
+    "/user-management/me": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserManagementResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "User Management"
+        ],
+        "parameters": [],
+        "operationId": "get/user-management/me"
+      }
+    },
+    "/user-management/{id}": {
+      "put": {
+        "summary": "Update user by ID or documentId",
+        "description": "Update user information with comprehensive profile data including all custom fields and avatar support. Supports both numeric ID and documentId.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "User Management"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "User ID (number) or documentId (24-character alphanumeric string) for user identification",
+            "required": true,
+            "schema": {
+              "oneOf": [
+                {
+                  "type": "integer",
+                  "example": 14
+                },
+                {
+                  "type": "string",
+                  "pattern": "^[a-z0-9]{24}$",
+                  "example": "sg2vjc0k00ktz6n38fpn0b64"
+                }
+              ]
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "username": {
+                    "type": "string",
+                    "minLength": 3,
+                    "description": "Unique username (minimum 3 characters)",
+                    "example": "john_doe_updated"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "description": "User email address",
+                    "example": "john.updated@example.com"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 6,
+                    "description": "User password (minimum 6 characters)",
+                    "example": "newpassword123"
+                  },
+                  "role": {
+                    "type": "integer",
+                    "description": "Role ID",
+                    "example": 1
+                  },
+                  "confirmed": {
+                    "type": "boolean",
+                    "description": "Email confirmation status",
+                    "example": true
+                  },
+                  "blocked": {
+                    "type": "boolean",
+                    "description": "User blocked status",
+                    "example": false
+                  },
+                  "date_of_birth": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "Date of birth",
+                    "example": "1990-01-15"
+                  },
+                  "birthday": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "Birthday",
+                    "example": "1990-01-15"
+                  },
+                  "address": {
+                    "type": "string",
+                    "description": "Full address",
+                    "example": "456 Updated Street, New City, Country"
+                  },
+                  "phone": {
+                    "type": "string",
+                    "description": "Phone number",
+                    "example": "+1987654321"
+                  },
+                  "facebook": {
+                    "type": "string",
+                    "description": "Facebook profile URL",
+                    "example": "https://facebook.com/johndoe.updated"
+                  },
+                  "twitter": {
+                    "type": "string",
+                    "description": "Twitter profile URL",
+                    "example": "https://twitter.com/johndoe.updated"
+                  },
+                  "city": {
+                    "type": "string",
+                    "description": "City",
+                    "example": "Los Angeles"
+                  },
+                  "country": {
+                    "type": "string",
+                    "description": "Country",
+                    "example": "United States"
+                  },
+                  "gender": {
+                    "type": "string",
+                    "enum": ["male", "female", "other"],
+                    "description": "Gender",
+                    "example": "female"
+                  },
+                  "avatar": {
+                    "type": "integer",
+                    "description": "Avatar media ID (upload file first to get ID)",
+                    "example": 456
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User updated successfully with complete profile information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "allOf": [
+                        {
+                          "$ref": "#/components/schemas/User"
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "role": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "integer",
+                                  "example": 1
+                                },
+                                "documentId": {
+                                  "type": "string",
+                                  "example": "zief58ukflhaf8dw1firc128"
+                                },
+                                "name": {
+                                  "type": "string",
+                                  "example": "Authenticated"
+                                },
+                                "type": {
+                                  "type": "string",
+                                  "example": "authenticated"
+                                },
+                                "description": {
+                                  "type": "string",
+                                  "example": "Default role given to authenticated user."
+                                }
+                              },
+                              "description": "Complete user role information"
+                            },
+                            "avatar": {
+                              "oneOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "$ref": "#/components/schemas/UploadFile"
+                                }
+                              ],
+                              "description": "User avatar image (null if not set)"
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "User updated successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "put/user-management/{id}"
+      },
+      "delete": {
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int64"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "User Management"
+        ],
+        "parameters": [
+          {
+            "name": "documentId",
+            "in": "path",
+            "description": "Document ID (alphanumeric string) - required for update/delete operations in Strapi v5",
+            "deprecated": false,
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z0-9]{24}$",
+              "example": "o9m182bqf02l0zjrq8weqfwz"
+            }
+          }
+        ],
+        "operationId": "delete/user-management/{id}"
+      }
+    },
     "/upload/files/{documentId}": {
       "get": {
         "parameters": [
@@ -5393,314 +5682,6 @@
           },
           "403": {
             "description": "You can only view your own stats"
-          },
-          "404": {
-            "description": "User not found"
-          }
-        }
-      }
-    },
-    "/user-delete/{id}": {
-      "delete": {
-        "tags": [
-          "User Management"
-        ],
-        "summary": "Delete a user",
-        "description": "Delete a user by documentId. Users can delete their own account or admins can delete any user.",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "User documentId (24-character alphanumeric string)"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "User deleted successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "type": "integer"
-                        },
-                        "documentId": {
-                          "type": "string"
-                        },
-                        "username": {
-                          "type": "string"
-                        },
-                        "email": {
-                          "type": "string"
-                        }
-                      }
-                    },
-                    "message": {
-                      "type": "string",
-                      "example": "User deleted successfully"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized"
-          },
-          "403": {
-            "description": "Forbidden - Can only delete own account or must be admin"
-          },
-          "404": {
-            "description": "User not found"
-          }
-        }
-      }
-    },
-    "/users/{id}": {
-      "put": {
-        "tags": [
-          "User Management"
-        ],
-        "summary": "Update user information",
-        "description": "Update user profile with comprehensive information. All fields are optional for updates. **Important:** Use documentId (24-character string) for the id parameter, not numeric ID.",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "pattern": "^[a-z0-9]{24}$",
-              "example": "pd6qqd1cix4pyhai5ya8xz7y"
-            },
-            "description": "User documentId (24-character alphanumeric string, not integer ID)"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "username": {
-                    "type": "string",
-                    "minLength": 3,
-                    "description": "Update username (optional)",
-                    "example": "new_username"
-                  },
-                  "email": {
-                    "type": "string",
-                    "format": "email",
-                    "description": "Update email address (optional)",
-                    "example": "newemail@example.com"
-                  },
-                  "password": {
-                    "type": "string",
-                    "minLength": 6,
-                    "description": "Update password (optional)",
-                    "example": "NewSecurePass123"
-                  },
-                  "date_of_birth": {
-                    "type": "string",
-                    "format": "date",
-                    "description": "Update date of birth (optional)",
-                    "example": "1990-01-15"
-                  },
-                  "address": {
-                    "type": "string",
-                    "description": "Update address (optional)",
-                    "example": "789 Dong Khoi Street, District 1"
-                  },
-                  "phone": {
-                    "type": "string",
-                    "description": "Update phone number (optional)",
-                    "example": "+84912345678"
-                  },
-                  "facebook": {
-                    "type": "string",
-                    "description": "Update Facebook profile URL (optional)",
-                    "example": "https://facebook.com/newprofile"
-                  },
-                  "twitter": {
-                    "type": "string",
-                    "description": "Update Twitter profile URL (optional)",
-                    "example": "https://twitter.com/newprofile"
-                  },
-                  "city": {
-                    "type": "string",
-                    "description": "Update city (optional)",
-                    "example": "Hanoi"
-                  },
-                  "country": {
-                    "type": "string",
-                    "description": "Update country (optional)",
-                    "example": "Vietnam"
-                  },
-                  "gender": {
-                    "type": "string",
-                    "enum": [
-                      "male",
-                      "female",
-                      "other"
-                    ],
-                    "description": "Update gender (optional)",
-                    "example": "other"
-                  }
-                }
-              },
-              "examples": {
-                "update-profile": {
-                  "summary": "Update profile information",
-                  "value": {
-                    "phone": "+84912345678",
-                    "city": "Hanoi",
-                    "address": "789 Dong Khoi Street, District 1"
-                  }
-                },
-                "update-credentials": {
-                  "summary": "Update username and email",
-                  "value": {
-                    "username": "new_username",
-                    "email": "newemail@example.com"
-                  }
-                },
-                "update-password": {
-                  "summary": "Update password only",
-                  "value": {
-                    "password": "NewSecurePass123"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "User updated successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "$ref": "#/components/schemas/User"
-                    },
-                    "message": {
-                      "type": "string",
-                      "example": "User updated successfully"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad request - validation errors",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "object",
-                      "properties": {
-                        "message": {
-                          "type": "string",
-                          "example": "Email already taken"
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Authentication required"
-          },
-          "404": {
-            "description": "User not found"
-          }
-        }
-      }
-    },
-    "/users/{id}/profile": {
-      "put": {
-        "tags": [
-          "User Profile"
-        ],
-        "summary": "Update user profile",
-        "description": "Update user profile information (own profile only)",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            },
-            "description": "User ID"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UserProfileInput"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Profile updated successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "$ref": "#/components/schemas/User"
-                    },
-                    "message": {
-                      "type": "string",
-                      "example": "Profile updated successfully"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Authentication required"
-          },
-          "403": {
-            "description": "You can only update your own profile"
           },
           "404": {
             "description": "User not found"
@@ -13010,6 +12991,36 @@
           },
           "meta": {
             "type": "object"
+          }
+        }
+      },
+      "UserManagementRequest": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "locale": {
+                "type": "string"
+              },
+              "localizations": {
+                "type": "array",
+                "items": {
+                  "oneOf": [
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ],
+                  "example": "string or id"
+                }
+              }
+            }
           }
         }
       },

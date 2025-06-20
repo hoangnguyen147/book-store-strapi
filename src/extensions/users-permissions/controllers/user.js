@@ -368,6 +368,7 @@ module.exports = {
    * Get user with all fields
    */
   async me(ctx) {
+    console.log("get me")
     const user = ctx.state.user;
 
     if (!user) {
@@ -375,7 +376,8 @@ module.exports = {
     }
 
     try {
-      const userData = await strapi.entityService.findOne('plugin::users-permissions.user', user.id, {
+      const user = await strapi.db.query('plugin::users-permissions.user').findOne({
+        where: { id: user.id },
         populate: {
           role: true,
           avatar: true
