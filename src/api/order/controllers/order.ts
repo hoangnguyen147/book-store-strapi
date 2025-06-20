@@ -171,6 +171,173 @@ export default factories.createCoreController('api::order.order', ({ strapi }) =
   },
 
   /**
+   * Update order status and details
+   */
+  async update(ctx) {
+    try {
+      const { id } = ctx.params;
+      const { data } = ctx.request.body;
+      const userId = ctx.state.user?.id;
+      const userRole = ctx.state.user?.role?.type;
+
+      console.log('🔄 Order update called with ID:', id);
+      console.log('🔄 Update data:', data);
+
+      // Authentication check
+      if (!userId) {
+        return ctx.unauthorized('Authentication required to update order');
+      }
+
+      // Find the existing order using documentId or numeric ID
+      let existingOrder: any;
+
+      try {
+        // First try to find by documentId (Strapi v5 format)
+        if (isNaN(Number(id))) {
+          console.log('🔍 Finding order by documentId:', id);
+          existingOrder = await strapi.db.query('api::order.order').findOne({
+            where: { documentId: id },
+            populate: {
+              user: true,
+              order_items: {
+                populate: {
+                  book: true
+                }
+              }
+            }
+          });
+        } else {
+          console.log('🔍 Finding order by numeric ID:', id);
+          existingOrder = await strapi.db.query('api::order.order').findOne({
+            where: { id: parseInt(id) },
+            populate: {
+              user: true,
+              order_items: {
+                populate: ['book']
+              }
+            }
+          });
+        }
+      } catch (dbError) {
+        console.error('❌ Database error finding order:', dbError);
+        return ctx.badRequest('Error finding order', { error: dbError.message });
+      }
+
+      if (!existingOrder) {
+        return ctx.notFound('Order not found');
+      }
+
+      console.log('✅ Found order:', existingOrder.id, 'Owner:', existingOrder.user?.id);
+
+      // Authorization check - only order owner or admin can update
+      if (existingOrder.user?.id !== userId && userRole !== 'admin') {
+        return ctx.forbidden('You can only update your own orders or you must be an admin');
+      }
+
+      // Prepare update data - only allow certain fields to be updated
+      const allowedFields = ['status', 'shipping_address', 'phone', 'notes'];
+      const updateData = {};
+
+      allowedFields.forEach(field => {
+        if (data[field] !== undefined) {
+          updateData[field] = data[field];
+        }
+      });
+
+      // Additional validation for status updates
+      if (data.status) {
+        const validStatuses = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'];
+        if (!validStatuses.includes(data.status)) {
+          return ctx.badRequest('Invalid status. Must be one of: ' + validStatuses.join(', '));
+        }
+
+        // Only admin can change status to certain values
+        if (['confirmed', 'shipped', 'delivered'].includes(data.status) && userRole !== 'admin') {
+          return ctx.forbidden('Only admin can change order status to confirmed, shipped, or delivered');
+        }
+      }
+
+      // Update the order using the correct identifier
+      let updatedOrder: any;
+
+      try {
+        if (isNaN(Number(id))) {
+          // Update by documentId
+          console.log('🔄 Updating order by documentId:', id);
+          updatedOrder = await strapi.db.query('api::order.order').update({
+            where: { documentId: id },
+            data: updateData,
+            populate: {
+              order_items: {
+                populate: {
+                  book: {
+                    populate: {
+                      thumbnail: true,
+                      categories: true,
+                      authors: true
+                    }
+                  }
+                }
+              },
+              user: {
+                populate: {
+                  role: true
+                }
+              }
+            }
+          });
+        } else {
+          // Update by numeric ID
+          console.log('🔄 Updating order by numeric ID:', id);
+          updatedOrder = await strapi.db.query('api::order.order').update({
+            where: { id: parseInt(id) },
+            data: updateData,
+            populate: {
+              order_items: {
+                populate: {
+                  book: {
+                    populate: {
+                      thumbnail: true,
+                      categories: true,
+                      authors: true
+                    }
+                  }
+                }
+              },
+              user: {
+                populate: {
+                  role: true
+                }
+              }
+            }
+          });
+        }
+      } catch (updateError) {
+        console.error('❌ Error updating order:', updateError);
+        return ctx.badRequest('Error updating order', { error: updateError.message });
+      }
+
+      if (!updatedOrder) {
+        return ctx.badRequest('Failed to update order - no result returned');
+      }
+
+      console.log('✅ Order updated successfully:', updatedOrder.id);
+
+      // Return the updated order directly (already populated)
+      return ctx.send({
+        data: updatedOrder,
+        message: 'Order updated successfully'
+      });
+
+    } catch (error) {
+      console.error('Order update error:', error);
+      return ctx.badRequest('Failed to update order', {
+        error: error.message || 'Unknown error occurred'
+      });
+    }
+  },
+
+  /**
    * Get all orders from all users - Admin only
    */
   async getAllOrdersAdmin(ctx) {

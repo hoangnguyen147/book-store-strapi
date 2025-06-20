@@ -106,11 +106,33 @@ module.exports = {
         populate: ['role']
       });
 
-      const sanitizedUserWithRole = await sanitize.contentAPI.output(userWithRole, strapi.getModel('plugin::users-permissions.user'));
+      // Create a custom sanitized user object that includes role
+      const sanitizedUser = {
+        id: userWithRole.id,
+        documentId: userWithRole.documentId,
+        username: userWithRole.username,
+        email: userWithRole.email,
+        provider: userWithRole.provider,
+        confirmed: userWithRole.confirmed,
+        blocked: userWithRole.blocked,
+        createdAt: userWithRole.createdAt,
+        updatedAt: userWithRole.updatedAt,
+        publishedAt: userWithRole.publishedAt,
+        birthday: userWithRole.birthday,
+        address: userWithRole.address,
+        phone: userWithRole.phone,
+        facebook: userWithRole.facebook,
+        twitter: userWithRole.twitter,
+        city: userWithRole.city,
+        date_of_birth: userWithRole.date_of_birth,
+        gender: userWithRole.gender,
+        country: userWithRole.country,
+        role: userWithRole.role || null // Explicitly include role
+      };
 
       return ctx.send({
         jwt,
-        user: sanitizedUserWithRole,
+        user: sanitizedUser,
       });
     } catch (err) {
       if (err.details?.errors) {
@@ -125,6 +147,7 @@ module.exports = {
    * Override the default login method to include role information in response
    */
   async callback(ctx) {
+    console.log('🚀 CUSTOM AUTH CONTROLLER IS BEING USED!');
     const provider = ctx.params.provider || 'local';
     const params = ctx.request.body;
 
@@ -159,7 +182,10 @@ module.exports = {
             { username: params.username },
           ],
         },
-        populate: ['role'] // Include role in the query
+        populate: {
+          role: true,
+          avatar: true
+        } // Include role and avatar in the query
       });
 
       if (!user) {
@@ -192,7 +218,36 @@ module.exports = {
       if (!validPassword) {
         throw new ValidationError('Invalid identifier or password');
       } else {
-        const sanitizedUser = await sanitize.contentAPI.output(user, strapi.getModel('plugin::users-permissions.user'));
+        // Debug: Log the user object to see if role is populated
+        console.log('🔍 User object from database:', JSON.stringify(user, null, 2));
+        console.log('🔍 User role:', user.role);
+
+        // Create a custom sanitized user object that includes role and avatar
+        const sanitizedUser = {
+          id: user.id,
+          documentId: user.documentId,
+          username: user.username,
+          email: user.email,
+          provider: user.provider,
+          confirmed: user.confirmed,
+          blocked: user.blocked,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+          publishedAt: user.publishedAt,
+          birthday: user.birthday,
+          address: user.address,
+          phone: user.phone,
+          facebook: user.facebook,
+          twitter: user.twitter,
+          city: user.city,
+          date_of_birth: user.date_of_birth,
+          gender: user.gender,
+          country: user.country,
+          role: user.role || null, // Explicitly include role
+          avatar: user.avatar || null // Explicitly include avatar
+        };
+
+        console.log('🔍 Sanitized user with role:', JSON.stringify(sanitizedUser, null, 2));
 
         return ctx.send({
           jwt: getService('jwt').issue({ id: user.id }),

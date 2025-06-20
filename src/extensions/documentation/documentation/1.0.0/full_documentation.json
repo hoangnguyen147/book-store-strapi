@@ -14,7 +14,7 @@
       "name": "MIT",
       "url": "https://opensource.org/licenses/MIT"
     },
-    "x-generation-date": "2025-06-19T16:12:03.193Z"
+    "x-generation-date": "2025-06-20T12:37:24.406Z"
   },
   "x-strapi-config": {
     "plugins": [
@@ -2016,6 +2016,90 @@
             "description": "Authentication required"
           }
         }
+      }
+    },
+    "/user-management/profile/{documentId}": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserManagementResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "User Management"
+        ],
+        "parameters": [
+          {
+            "name": "documentId",
+            "in": "path",
+            "description": "User documentId (24-character alphanumeric string) or numeric ID for backward compatibility",
+            "deprecated": false,
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z0-9]{24}$|^[0-9]+$",
+              "example": "eahn47d9y3li58itka1qtnbg"
+            }
+          }
+        ],
+        "operationId": "get/user-management/profile/{documentId}"
       }
     },
     "/upload": {

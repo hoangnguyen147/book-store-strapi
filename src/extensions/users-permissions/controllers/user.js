@@ -283,7 +283,10 @@ module.exports = {
       // Get users with pagination
       const users = await strapi.db.query('plugin::users-permissions.user').findMany({
         where,
-        populate: ['role'],
+        populate: {
+          role: true,
+          avatar: true
+        },
         limit: pageSize,
         offset: start,
         orderBy: { createdAt: 'desc' }
@@ -373,12 +376,25 @@ module.exports = {
 
     try {
       const userData = await strapi.entityService.findOne('plugin::users-permissions.user', user.id, {
-        populate: ['role']
+        populate: {
+          role: true,
+          avatar: true
+        }
       });
+      console.log("userData: ", userData)
 
-      // Ensure all new fields are included, set to null if not present
-      const userWithAllFields = {
-        ...userData,
+      // Create a custom sanitized user object that includes role and avatar
+      const sanitizedUser = {
+        id: userData.id,
+        documentId: userData.documentId,
+        username: userData.username,
+        email: userData.email,
+        provider: userData.provider,
+        confirmed: userData.confirmed,
+        blocked: userData.blocked,
+        createdAt: userData.createdAt,
+        updatedAt: userData.updatedAt,
+        publishedAt: userData.publishedAt,
         birthday: userData.birthday || null,
         address: userData.address || '',
         phone: userData.phone || '',
@@ -387,11 +403,11 @@ module.exports = {
         city: userData.city || '',
         date_of_birth: userData.date_of_birth || null,
         gender: userData.gender || null,
-        country: userData.country || ''
+        country: userData.country || '',
+        role: userData.role || null, // Explicitly include role
+        avatar: userData.avatar || null // Explicitly include avatar
       };
 
-      const sanitizedUser = sanitize.contentAPI.output(userWithAllFields, strapi.getModel('plugin::users-permissions.user'));
-      
       return ctx.send(sanitizedUser);
     } catch (error) {
       return ctx.badRequest('Error fetching user data', { error: error.message });

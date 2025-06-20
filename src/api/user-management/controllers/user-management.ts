@@ -35,7 +35,10 @@ export default factories.createCoreController('api::user-management.user-managem
       // Get users with pagination
       const users = await strapi.db.query('plugin::users-permissions.user').findMany({
         where,
-        populate: ['role'],
+        populate: {
+          role: true,
+          avatar: true
+        },
         limit: pageSize,
         offset: start,
         orderBy: { createdAt: 'desc' }
@@ -64,6 +67,70 @@ export default factories.createCoreController('api::user-management.user-managem
     } catch (error) {
       console.error('Error in user management find:', error);
       return ctx.badRequest('Error fetching users', { error: error.message });
+    }
+  },
+
+  /**
+   * Get user profile by documentId with role and avatar information
+   */
+  async getUserProfile(ctx) {
+    try {
+      const { documentId } = ctx.params;
+
+      if (!documentId) {
+        return ctx.badRequest('User documentId is required');
+      }
+
+      console.log('🔍 Getting user profile for:', documentId);
+
+      // Find user by documentId or numeric ID
+      let user: any;
+
+      try {
+        // First try to find by documentId (Strapi v5 format)
+        if (isNaN(Number(documentId))) {
+          console.log('🔍 Finding user by documentId:', documentId);
+          user = await strapi.db.query('plugin::users-permissions.user').findOne({
+            where: { documentId: documentId },
+            populate: {
+              role: true,
+              avatar: true
+            }
+          });
+        } else {
+          console.log('🔍 Finding user by numeric ID:', documentId);
+          user = await strapi.db.query('plugin::users-permissions.user').findOne({
+            where: { id: parseInt(documentId) },
+            populate: {
+              role: true,
+              avatar: true
+            }
+          });
+        }
+      } catch (dbError) {
+        console.error('❌ Database error finding user:', dbError);
+        return ctx.badRequest('Error finding user', { error: dbError.message });
+      }
+
+      if (!user) {
+        return ctx.notFound('User not found');
+      }
+
+      // Sanitize user data (remove sensitive fields)
+      const { password, resetPasswordToken, confirmationToken, ...sanitizedUser } = user;
+
+      console.log('✅ User profile retrieved successfully:', user.id);
+      console.log('🔍 User role:', user.role?.name || 'No role');
+      console.log('🔍 User avatar:', user.avatar ? 'Has avatar' : 'No avatar');
+
+      return ctx.send({
+        data: sanitizedUser,
+        message: 'User profile retrieved successfully'
+      });
+
+    } catch (error) {
+      console.error('❌ Error in getUserProfile:', error);
+      return ctx.badRequest('Error fetching user profile', { error: error.message });
     }
   },
 }));
