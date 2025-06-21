@@ -176,12 +176,14 @@ export default factories.createCoreController('api::order.order', ({ strapi }) =
   async update(ctx) {
     try {
       const { id } = ctx.params;
-      const { data } = ctx.request.body;
+      // Handle both formats: direct data or wrapped in data object
+      const requestData = ctx.request.body.data || ctx.request.body;
       const userId = ctx.state.user?.id;
       const userRole = ctx.state.user?.role?.type;
 
       console.log('🔄 Order update called with ID:', id);
-      console.log('🔄 Update data:', data);
+      console.log('🔄 Update data:', requestData);
+      console.log('🔄 Raw request body:', ctx.request.body);
 
       // Authentication check
       if (!userId) {
@@ -239,20 +241,20 @@ export default factories.createCoreController('api::order.order', ({ strapi }) =
       const updateData = {};
 
       allowedFields.forEach(field => {
-        if (data[field] !== undefined) {
-          updateData[field] = data[field];
+        if (requestData[field] !== undefined) {
+          updateData[field] = requestData[field];
         }
       });
 
       // Additional validation for status updates
-      if (data.status) {
+      if (requestData.status) {
         const validStatuses = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'];
-        if (!validStatuses.includes(data.status)) {
+        if (!validStatuses.includes(requestData.status)) {
           return ctx.badRequest('Invalid status. Must be one of: ' + validStatuses.join(', '));
         }
 
         // Only admin can change status to certain values
-        if (['confirmed', 'shipped', 'delivered'].includes(data.status) && userRole !== 'admin') {
+        if (['confirmed', 'shipped', 'delivered'].includes(requestData.status) && userRole !== 'admin') {
           return ctx.forbidden('Only admin can change order status to confirmed, shipped, or delivered');
         }
       }
