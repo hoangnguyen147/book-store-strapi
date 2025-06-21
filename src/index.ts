@@ -1,5 +1,59 @@
 import type { Core } from '@strapi/strapi';
 
+/**
+ * Set up permissions for report APIs
+ */
+async function setupReportPermissions(strapi: any) {
+  try {
+    // Find the public role
+    const publicRole = await strapi.query('plugin::users-permissions.role').findOne({
+      where: { type: 'public' }
+    });
+
+    if (!publicRole) {
+      console.log('❌ Public role not found');
+      return;
+    }
+
+    // Define report permissions
+    const reportPermissions = [
+      'api::report.report.revenue',
+      'api::report.report.revenueTrends',
+      'api::report.report.topBooks',
+      'api::report.report.inventory',
+      'api::report.report.lowStock',
+      'api::report.report.inventoryMovement',
+      'api::report.report.dashboard'
+    ];
+
+    // Check and create permissions if they don't exist
+    for (const action of reportPermissions) {
+      const existingPermission = await strapi.query('plugin::users-permissions.permission').findOne({
+        where: {
+          action: action,
+          role: publicRole.id
+        }
+      });
+
+      if (!existingPermission) {
+        await strapi.query('plugin::users-permissions.permission').create({
+          data: {
+            action: action,
+            role: publicRole.id
+          }
+        });
+        console.log(`✅ Created permission: ${action}`);
+      } else {
+        console.log(`✅ Permission already exists: ${action}`);
+      }
+    }
+
+    console.log('📊 Report API permissions configured');
+  } catch (error) {
+    console.error('❌ Error setting up report permissions:', error);
+  }
+}
+
 export default {
   /**
    * An asynchronous register function that runs before
@@ -63,8 +117,13 @@ export default {
     } else {
       console.log('⏭️  Skipping seeding (SEED_BOOKS not set to true)');
     }
+
+    // Set up permissions for report APIs
+    await setupReportPermissions(strapi);
   },
 };
+
+
 
 /**
  * Remove i18n related fields from data objects

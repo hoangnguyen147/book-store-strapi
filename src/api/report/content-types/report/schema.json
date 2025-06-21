@@ -1,0 +1,32 @@
+{
+  "kind": "collectionType",
+  "collectionName": "reports",
+  "info": {
+    "singularName": "report",
+    "pluralName": "reports",
+    "displayName": "Report",
+    "description": "Analytics and reporting data"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "type": {
+      "type": "enumeration",
+      "enum": ["revenue", "inventory", "dashboard"],
+      "required": true
+    },
+    "data": {
+      "type": "json"
+    },
+    "generated_at": {
+      "type": "datetime",
+      "default": "now"
+    }
+  }
+}

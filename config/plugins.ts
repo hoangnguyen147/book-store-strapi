@@ -21,11 +21,15 @@ export default () => ({
           name: 'MIT',
           url: 'https://opensource.org/licenses/MIT'
         },
+        // Remove x-generation-date to prevent file updates on each server start
       },
       'x-strapi-config': {
         plugins: ['upload', 'users-permissions'],
         path: '/documentation',
         mutateDocumentation: (generatedDocumentationDraft) => {
+          // Remove the x-generation-date to prevent file updates on each server start
+          delete generatedDocumentationDraft.info['x-generation-date'];
+
           // Fix Strapi v5 documentId parameters for PUT/DELETE operations
           const fixDocumentIdParameters = (paths) => {
             Object.keys(paths).forEach(pathKey => {
@@ -1240,108 +1244,6 @@ This endpoint allows you to create a complete order with multiple books and quan
                 }
               }
             },
-            '/users/me': {
-              get: {
-                tags: ['User Profile'],
-                summary: 'Get my profile',
-                description: 'Get the complete profile of the currently authenticated user including role information',
-                security: [{ bearerAuth: [] }],
-                responses: {
-                  '200': {
-                    description: 'User profile with complete role information',
-                    content: {
-                      'application/json': {
-                        schema: {
-                          allOf: [
-                            { $ref: '#/components/schemas/User' },
-                            {
-                              type: 'object',
-                              properties: {
-                                role: {
-                                  type: 'object',
-                                  properties: {
-                                    id: { type: 'integer', example: 1 },
-                                    name: { type: 'string', example: 'Authenticated' },
-                                    type: { type: 'string', example: 'authenticated' },
-                                    description: { type: 'string', example: 'Default role given to authenticated user.' },
-                                    permissions: {
-                                      type: 'array',
-                                      items: {
-                                        type: 'object',
-                                        properties: {
-                                          id: { type: 'integer' },
-                                          action: { type: 'string' },
-                                          subject: { type: 'string' }
-                                        }
-                                      },
-                                      description: 'User permissions based on role'
-                                    }
-                                  },
-                                  description: 'Complete user role information with permissions'
-                                }
-                              }
-                            }
-                          ]
-                        }
-                      }
-                    }
-                  },
-                  '401': {
-                    description: 'Authentication required'
-                  }
-                }
-              }
-            },
-            '/users/{id}/profile': {
-              put: {
-                tags: ['User Profile'],
-                summary: 'Update user profile',
-                description: 'Update user profile information (own profile only)',
-                security: [{ bearerAuth: [] }],
-                parameters: [
-                  {
-                    name: 'id',
-                    in: 'path',
-                    required: true,
-                    schema: { type: 'integer' },
-                    description: 'User ID'
-                  }
-                ],
-                requestBody: {
-                  required: true,
-                  content: {
-                    'application/json': {
-                      schema: { $ref: '#/components/schemas/UserProfileInput' }
-                    }
-                  }
-                },
-                responses: {
-                  '200': {
-                    description: 'Profile updated successfully',
-                    content: {
-                      'application/json': {
-                        schema: {
-                          type: 'object',
-                          properties: {
-                            data: { $ref: '#/components/schemas/User' },
-                            message: { type: 'string', example: 'Profile updated successfully' }
-                          }
-                        }
-                      }
-                    }
-                  },
-                  '401': {
-                    description: 'Authentication required'
-                  },
-                  '403': {
-                    description: 'You can only update your own profile'
-                  },
-                  '404': {
-                    description: 'User not found'
-                  }
-                }
-              }
-            },
             '/orders/{id}/print-bill': {
               get: {
                 tags: ['Orders'],
@@ -2063,6 +1965,541 @@ This endpoint generates a comprehensive revenue report for a specified date rang
                   401: { description: 'Unauthorized' },
                   403: { description: 'Forbidden - Can only view own orders' },
                   404: { description: 'Order not found' }
+                }
+              }
+            },
+            '/reports/revenue': {
+              get: {
+                tags: ['Reports'],
+                summary: 'Get comprehensive revenue report',
+                description: 'Generate detailed revenue report with optional date filtering, category/author filtering, time series grouping, and CSV export',
+                parameters: [
+                  {
+                    name: 'startDate',
+                    in: 'query',
+                    description: 'Start date (YYYY-MM-DD)',
+                    required: false,
+                    schema: { type: 'string', format: 'date' }
+                  },
+                  {
+                    name: 'endDate',
+                    in: 'query',
+                    description: 'End date (YYYY-MM-DD)',
+                    required: false,
+                    schema: { type: 'string', format: 'date' }
+                  },
+                  {
+                    name: 'date',
+                    in: 'query',
+                    description: 'Single date filter (YYYY-MM-DD)',
+                    required: false,
+                    schema: { type: 'string', format: 'date' }
+                  },
+                  {
+                    name: 'groupBy',
+                    in: 'query',
+                    description: 'Group results by time period for time series analysis',
+                    required: false,
+                    schema: { type: 'string', enum: ['day', 'week', 'month', 'year'] }
+                  },
+                  {
+                    name: 'categoryId',
+                    in: 'query',
+                    description: 'Filter by category ID',
+                    required: false,
+                    schema: { type: 'integer' }
+                  },
+                  {
+                    name: 'authorId',
+                    in: 'query',
+                    description: 'Filter by author ID',
+                    required: false,
+                    schema: { type: 'integer' }
+                  },
+                  {
+                    name: 'format',
+                    in: 'query',
+                    description: 'Response format',
+                    required: false,
+                    schema: { type: 'string', enum: ['json', 'csv'], default: 'json' }
+                  }
+                ],
+                responses: {
+                  200: {
+                    description: 'Revenue report generated successfully',
+                    content: {
+                      'application/json': {
+                        schema: {
+                          type: 'object',
+                          properties: {
+                            data: {
+                              type: 'object',
+                              properties: {
+                                summary: {
+                                  type: 'object',
+                                  properties: {
+                                    totalRevenue: { type: 'integer' },
+                                    totalOrders: { type: 'integer' },
+                                    totalItemsSold: { type: 'integer' },
+                                    averageOrderValue: { type: 'integer' }
+                                  }
+                                },
+                                bookSales: {
+                                  type: 'array',
+                                  items: {
+                                    type: 'object',
+                                    properties: {
+                                      bookId: { type: 'integer' },
+                                      bookName: { type: 'string' },
+                                      quantitySold: { type: 'integer' },
+                                      totalRevenue: { type: 'integer' },
+                                      unitPrice: { type: 'integer' }
+                                    }
+                                  }
+                                },
+                                grandTotal: { type: 'integer' }
+                              }
+                            },
+                            message: { type: 'string' }
+                          }
+                        }
+                      },
+                      'text/csv': {
+                        schema: { type: 'string' }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            '/reports/revenue/trends': {
+              get: {
+                tags: ['Reports'],
+                summary: 'Get revenue trends over time',
+                description: 'Generate time-series revenue data showing trends over different periods with automatic grouping',
+                parameters: [
+                  {
+                    name: 'period',
+                    in: 'query',
+                    description: 'Time period for analysis',
+                    required: false,
+                    schema: {
+                      type: 'string',
+                      enum: ['last7days', 'last30days', 'last3months', 'last6months', 'lastyear'],
+                      default: 'last30days'
+                    }
+                  },
+                  {
+                    name: 'groupBy',
+                    in: 'query',
+                    description: 'Override automatic grouping (auto-selected based on period if not specified)',
+                    required: false,
+                    schema: { type: 'string', enum: ['day', 'week', 'month'] }
+                  }
+                ],
+                responses: {
+                  200: {
+                    description: 'Revenue trends generated successfully',
+                    content: {
+                      'application/json': {
+                        schema: {
+                          type: 'object',
+                          properties: {
+                            data: {
+                              type: 'object',
+                              properties: {
+                                period: { type: 'string', example: 'last30days' },
+                                groupBy: { type: 'string', example: 'day' },
+                                timeSeries: {
+                                  type: 'array',
+                                  items: {
+                                    type: 'object',
+                                    properties: {
+                                      period: { type: 'string', example: '2025-06-21' },
+                                      label: { type: 'string', example: '6/21/2025' },
+                                      revenue: { type: 'integer', example: 150000 },
+                                      orders: { type: 'integer', example: 5 },
+                                      itemsSold: { type: 'integer', example: 12 },
+                                      averageOrderValue: { type: 'integer', example: 30000 }
+                                    }
+                                  }
+                                },
+                                summary: {
+                                  type: 'object',
+                                  properties: {
+                                    totalRevenue: { type: 'integer' },
+                                    totalOrders: { type: 'integer' },
+                                    averageRevenuePerPeriod: { type: 'integer' }
+                                  }
+                                }
+                              }
+                            },
+                            message: { type: 'string' }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            '/reports/revenue/top-books': {
+              get: {
+                tags: ['Reports'],
+                summary: 'Get top performing books by revenue',
+                description: 'Get the highest revenue-generating books with detailed performance metrics',
+                parameters: [
+                  {
+                    name: 'startDate',
+                    in: 'query',
+                    description: 'Start date (YYYY-MM-DD)',
+                    required: false,
+                    schema: { type: 'string', format: 'date' }
+                  },
+                  {
+                    name: 'endDate',
+                    in: 'query',
+                    description: 'End date (YYYY-MM-DD)',
+                    required: false,
+                    schema: { type: 'string', format: 'date' }
+                  },
+                  {
+                    name: 'limit',
+                    in: 'query',
+                    description: 'Number of top books to return',
+                    required: false,
+                    schema: { type: 'integer', default: 10, minimum: 1, maximum: 100 }
+                  },
+                  {
+                    name: 'categoryId',
+                    in: 'query',
+                    description: 'Filter by category ID',
+                    required: false,
+                    schema: { type: 'integer' }
+                  }
+                ],
+                responses: {
+                  200: {
+                    description: 'Top performing books retrieved successfully',
+                    content: {
+                      'application/json': {
+                        schema: {
+                          type: 'object',
+                          properties: {
+                            data: {
+                              type: 'object',
+                              properties: {
+                                topBooks: {
+                                  type: 'array',
+                                  items: {
+                                    type: 'object',
+                                    properties: {
+                                      bookId: { type: 'integer' },
+                                      bookName: { type: 'string' },
+                                      categories: { type: 'string' },
+                                      authors: { type: 'string' },
+                                      unitPrice: { type: 'integer' },
+                                      totalRevenue: { type: 'integer' },
+                                      quantitySold: { type: 'integer' },
+                                      orderCount: { type: 'integer' }
+                                    }
+                                  }
+                                },
+                                summary: {
+                                  type: 'object',
+                                  properties: {
+                                    totalBooksAnalyzed: { type: 'integer' },
+                                    totalRevenue: { type: 'integer' },
+                                    totalQuantitySold: { type: 'integer' }
+                                  }
+                                }
+                              }
+                            },
+                            message: { type: 'string' }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            '/reports/inventory': {
+              get: {
+                tags: ['Reports'],
+                summary: 'Get comprehensive inventory report',
+                description: 'Generate detailed inventory report showing books sold, remaining stock, and sales analytics',
+                parameters: [
+                  {
+                    name: 'startDate',
+                    in: 'query',
+                    description: 'Start date for sales data (YYYY-MM-DD)',
+                    required: false,
+                    schema: { type: 'string', format: 'date' }
+                  },
+                  {
+                    name: 'endDate',
+                    in: 'query',
+                    description: 'End date for sales data (YYYY-MM-DD)',
+                    required: false,
+                    schema: { type: 'string', format: 'date' }
+                  },
+                  {
+                    name: 'categoryId',
+                    in: 'query',
+                    description: 'Filter by category ID',
+                    required: false,
+                    schema: { type: 'integer' }
+                  },
+                  {
+                    name: 'format',
+                    in: 'query',
+                    description: 'Response format',
+                    required: false,
+                    schema: { type: 'string', enum: ['json', 'csv'], default: 'json' }
+                  }
+                ],
+                responses: {
+                  200: {
+                    description: 'Inventory report generated successfully',
+                    content: {
+                      'application/json': {
+                        schema: {
+                          type: 'object',
+                          properties: {
+                            data: {
+                              type: 'object',
+                              properties: {
+                                summary: {
+                                  type: 'object',
+                                  properties: {
+                                    totalBooks: { type: 'integer' },
+                                    totalItemsSold: { type: 'integer' },
+                                    totalRevenue: { type: 'integer' },
+                                    lowStockCount: { type: 'integer' }
+                                  }
+                                },
+                                books: {
+                                  type: 'array',
+                                  items: {
+                                    type: 'object',
+                                    properties: {
+                                      bookId: { type: 'integer' },
+                                      bookName: { type: 'string' },
+                                      currentStock: { type: 'integer' },
+                                      quantitySold: { type: 'integer' },
+                                      revenue: { type: 'integer' },
+                                      categories: { type: 'string' },
+                                      authors: { type: 'string' },
+                                      unitPrice: { type: 'integer' }
+                                    }
+                                  }
+                                },
+                                lowStockBooks: {
+                                  type: 'array',
+                                  items: {
+                                    type: 'object',
+                                    properties: {
+                                      bookId: { type: 'integer' },
+                                      bookName: { type: 'string' },
+                                      currentStock: { type: 'integer' }
+                                    }
+                                  }
+                                }
+                              }
+                            },
+                            message: { type: 'string' }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            '/reports/inventory/low-stock': {
+              get: {
+                tags: ['Reports'],
+                summary: 'Get low stock alert report',
+                description: 'Generate report of books with low inventory levels requiring restocking attention',
+                parameters: [
+                  {
+                    name: 'threshold',
+                    in: 'query',
+                    description: 'Minimum stock level for alert (default: 10)',
+                    required: false,
+                    schema: { type: 'integer', default: 10, minimum: 0 }
+                  },
+                  {
+                    name: 'categoryId',
+                    in: 'query',
+                    description: 'Filter by category ID',
+                    required: false,
+                    schema: { type: 'integer' }
+                  },
+                  {
+                    name: 'sortBy',
+                    in: 'query',
+                    description: 'Sort results by field',
+                    required: false,
+                    schema: { type: 'string', enum: ['quantity', 'name', 'lastSold'], default: 'quantity' }
+                  }
+                ],
+                responses: {
+                  200: {
+                    description: 'Low stock report generated successfully',
+                    content: {
+                      'application/json': {
+                        schema: {
+                          type: 'object',
+                          properties: {
+                            data: {
+                              type: 'object',
+                              properties: {
+                                lowStockBooks: {
+                                  type: 'array',
+                                  items: {
+                                    type: 'object',
+                                    properties: {
+                                      bookId: { type: 'integer' },
+                                      bookName: { type: 'string' },
+                                      currentStock: { type: 'integer' },
+                                      threshold: { type: 'integer' },
+                                      stockStatus: { type: 'string', enum: ['OUT_OF_STOCK', 'LOW_STOCK'] },
+                                      categories: { type: 'string' },
+                                      authors: { type: 'string' },
+                                      unitPrice: { type: 'integer' },
+                                      lastSoldDate: { type: 'string', format: 'date-time', nullable: true },
+                                      daysSinceLastSold: { type: 'integer', nullable: true }
+                                    }
+                                  }
+                                },
+                                summary: {
+                                  type: 'object',
+                                  properties: {
+                                    totalBooksAnalyzed: { type: 'integer' },
+                                    outOfStockCount: { type: 'integer' },
+                                    lowStockCount: { type: 'integer' },
+                                    threshold: { type: 'integer' },
+                                    criticalBooks: { type: 'integer' }
+                                  }
+                                }
+                              }
+                            },
+                            message: { type: 'string' }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            '/reports/inventory/movement': {
+              get: {
+                tags: ['Reports'],
+                summary: 'Get inventory movement report',
+                description: 'Generate detailed report of inventory movements and stock changes over time',
+                parameters: [
+                  {
+                    name: 'startDate',
+                    in: 'query',
+                    description: 'Start date for movement analysis (YYYY-MM-DD)',
+                    required: false,
+                    schema: { type: 'string', format: 'date' }
+                  },
+                  {
+                    name: 'endDate',
+                    in: 'query',
+                    description: 'End date for movement analysis (YYYY-MM-DD)',
+                    required: false,
+                    schema: { type: 'string', format: 'date' }
+                  },
+                  {
+                    name: 'bookId',
+                    in: 'query',
+                    description: 'Analyze specific book movements',
+                    required: false,
+                    schema: { type: 'integer' }
+                  },
+                  {
+                    name: 'categoryId',
+                    in: 'query',
+                    description: 'Filter by category ID',
+                    required: false,
+                    schema: { type: 'integer' }
+                  }
+                ],
+                responses: {
+                  200: {
+                    description: 'Inventory movement report generated successfully',
+                    content: {
+                      'application/json': {
+                        schema: {
+                          type: 'object',
+                          properties: {
+                            data: {
+                              type: 'object',
+                              properties: {
+                                movementData: {
+                                  type: 'array',
+                                  items: {
+                                    type: 'object',
+                                    properties: {
+                                      bookId: { type: 'integer' },
+                                      bookName: { type: 'string' },
+                                      currentStock: { type: 'integer' },
+                                      categories: { type: 'string' },
+                                      authors: { type: 'string' },
+                                      totalMovements: { type: 'integer' },
+                                      totalQuantityMoved: { type: 'integer' },
+                                      averageMovementSize: { type: 'integer' },
+                                      lastMovementDate: { type: 'string', format: 'date-time', nullable: true },
+                                      movements: {
+                                        type: 'array',
+                                        items: {
+                                          type: 'object',
+                                          properties: {
+                                            date: { type: 'string', format: 'date-time' },
+                                            quantity: { type: 'integer' },
+                                            orderStatus: { type: 'string' },
+                                            unitPrice: { type: 'integer' },
+                                            totalPrice: { type: 'integer' }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                },
+                                summary: {
+                                  type: 'object',
+                                  properties: {
+                                    totalBooksAnalyzed: { type: 'integer' },
+                                    totalMovements: { type: 'integer' },
+                                    totalQuantityMoved: { type: 'integer' },
+                                    averageMovementPerBook: { type: 'integer' }
+                                  }
+                                }
+                              }
+                            },
+                            message: { type: 'string' }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            '/reports/dashboard': {
+              get: {
+                tags: ['Reports'],
+                summary: 'Get dashboard metrics',
+                description: 'Get key business metrics for dashboard display',
+                responses: {
+                  200: {
+                    description: 'Dashboard data retrieved successfully'
+                  }
                 }
               }
             }

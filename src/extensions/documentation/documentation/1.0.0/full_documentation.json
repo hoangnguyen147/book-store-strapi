@@ -13,8 +13,7 @@
     "license": {
       "name": "MIT",
       "url": "https://opensource.org/licenses/MIT"
-    },
-    "x-generation-date": "2025-06-20T18:05:37.252Z"
+    }
   },
   "x-strapi-config": {
     "plugins": [
@@ -1921,6 +1920,840 @@
         }
       }
     },
+    "/reports/revenue": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "summary": "Get comprehensive revenue report",
+        "description": "Generate detailed revenue report with optional date filtering, category/author filtering, time series grouping, and CSV export",
+        "parameters": [
+          {
+            "name": "startDate",
+            "in": "query",
+            "description": "Start date (YYYY-MM-DD)",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "description": "End date (YYYY-MM-DD)",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "description": "Single date filter (YYYY-MM-DD)",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "groupBy",
+            "in": "query",
+            "description": "Group results by time period for time series analysis",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "day",
+                "week",
+                "month",
+                "year"
+              ]
+            }
+          },
+          {
+            "name": "categoryId",
+            "in": "query",
+            "description": "Filter by category ID",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "authorId",
+            "in": "query",
+            "description": "Filter by author ID",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "description": "Response format",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "json",
+                "csv"
+              ],
+              "default": "json"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Revenue report generated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "summary": {
+                          "type": "object",
+                          "properties": {
+                            "totalRevenue": {
+                              "type": "integer"
+                            },
+                            "totalOrders": {
+                              "type": "integer"
+                            },
+                            "totalItemsSold": {
+                              "type": "integer"
+                            },
+                            "averageOrderValue": {
+                              "type": "integer"
+                            }
+                          }
+                        },
+                        "bookSales": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "bookId": {
+                                "type": "integer"
+                              },
+                              "bookName": {
+                                "type": "string"
+                              },
+                              "quantitySold": {
+                                "type": "integer"
+                              },
+                              "totalRevenue": {
+                                "type": "integer"
+                              },
+                              "unitPrice": {
+                                "type": "integer"
+                              }
+                            }
+                          }
+                        },
+                        "grandTotal": {
+                          "type": "integer"
+                        }
+                      }
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/reports/revenue/trends": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "summary": "Get revenue trends over time",
+        "description": "Generate time-series revenue data showing trends over different periods with automatic grouping",
+        "parameters": [
+          {
+            "name": "period",
+            "in": "query",
+            "description": "Time period for analysis",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "last7days",
+                "last30days",
+                "last3months",
+                "last6months",
+                "lastyear"
+              ],
+              "default": "last30days"
+            }
+          },
+          {
+            "name": "groupBy",
+            "in": "query",
+            "description": "Override automatic grouping (auto-selected based on period if not specified)",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "day",
+                "week",
+                "month"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Revenue trends generated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "period": {
+                          "type": "string",
+                          "example": "last30days"
+                        },
+                        "groupBy": {
+                          "type": "string",
+                          "example": "day"
+                        },
+                        "timeSeries": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "period": {
+                                "type": "string",
+                                "example": "2025-06-21"
+                              },
+                              "label": {
+                                "type": "string",
+                                "example": "6/21/2025"
+                              },
+                              "revenue": {
+                                "type": "integer",
+                                "example": 150000
+                              },
+                              "orders": {
+                                "type": "integer",
+                                "example": 5
+                              },
+                              "itemsSold": {
+                                "type": "integer",
+                                "example": 12
+                              },
+                              "averageOrderValue": {
+                                "type": "integer",
+                                "example": 30000
+                              }
+                            }
+                          }
+                        },
+                        "summary": {
+                          "type": "object",
+                          "properties": {
+                            "totalRevenue": {
+                              "type": "integer"
+                            },
+                            "totalOrders": {
+                              "type": "integer"
+                            },
+                            "averageRevenuePerPeriod": {
+                              "type": "integer"
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/reports/revenue/top-books": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "summary": "Get top performing books by revenue",
+        "description": "Get the highest revenue-generating books with detailed performance metrics",
+        "parameters": [
+          {
+            "name": "startDate",
+            "in": "query",
+            "description": "Start date (YYYY-MM-DD)",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "description": "End date (YYYY-MM-DD)",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number of top books to return",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 10,
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "categoryId",
+            "in": "query",
+            "description": "Filter by category ID",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Top performing books retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "topBooks": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "bookId": {
+                                "type": "integer"
+                              },
+                              "bookName": {
+                                "type": "string"
+                              },
+                              "categories": {
+                                "type": "string"
+                              },
+                              "authors": {
+                                "type": "string"
+                              },
+                              "unitPrice": {
+                                "type": "integer"
+                              },
+                              "totalRevenue": {
+                                "type": "integer"
+                              },
+                              "quantitySold": {
+                                "type": "integer"
+                              },
+                              "orderCount": {
+                                "type": "integer"
+                              }
+                            }
+                          }
+                        },
+                        "summary": {
+                          "type": "object",
+                          "properties": {
+                            "totalBooksAnalyzed": {
+                              "type": "integer"
+                            },
+                            "totalRevenue": {
+                              "type": "integer"
+                            },
+                            "totalQuantitySold": {
+                              "type": "integer"
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/reports/inventory": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "summary": "Get comprehensive inventory report",
+        "description": "Generate detailed inventory report showing books sold, remaining stock, and sales analytics",
+        "parameters": [
+          {
+            "name": "startDate",
+            "in": "query",
+            "description": "Start date for sales data (YYYY-MM-DD)",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "description": "End date for sales data (YYYY-MM-DD)",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "categoryId",
+            "in": "query",
+            "description": "Filter by category ID",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "description": "Response format",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "json",
+                "csv"
+              ],
+              "default": "json"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Inventory report generated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "summary": {
+                          "type": "object",
+                          "properties": {
+                            "totalBooks": {
+                              "type": "integer"
+                            },
+                            "totalItemsSold": {
+                              "type": "integer"
+                            },
+                            "totalRevenue": {
+                              "type": "integer"
+                            },
+                            "lowStockCount": {
+                              "type": "integer"
+                            }
+                          }
+                        },
+                        "books": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "bookId": {
+                                "type": "integer"
+                              },
+                              "bookName": {
+                                "type": "string"
+                              },
+                              "currentStock": {
+                                "type": "integer"
+                              },
+                              "quantitySold": {
+                                "type": "integer"
+                              },
+                              "revenue": {
+                                "type": "integer"
+                              },
+                              "categories": {
+                                "type": "string"
+                              },
+                              "authors": {
+                                "type": "string"
+                              },
+                              "unitPrice": {
+                                "type": "integer"
+                              }
+                            }
+                          }
+                        },
+                        "lowStockBooks": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "bookId": {
+                                "type": "integer"
+                              },
+                              "bookName": {
+                                "type": "string"
+                              },
+                              "currentStock": {
+                                "type": "integer"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/reports/inventory/low-stock": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "summary": "Get low stock alert report",
+        "description": "Generate report of books with low inventory levels requiring restocking attention",
+        "parameters": [
+          {
+            "name": "threshold",
+            "in": "query",
+            "description": "Minimum stock level for alert (default: 10)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 10,
+              "minimum": 0
+            }
+          },
+          {
+            "name": "categoryId",
+            "in": "query",
+            "description": "Filter by category ID",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "description": "Sort results by field",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "quantity",
+                "name",
+                "lastSold"
+              ],
+              "default": "quantity"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Low stock report generated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "lowStockBooks": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "bookId": {
+                                "type": "integer"
+                              },
+                              "bookName": {
+                                "type": "string"
+                              },
+                              "currentStock": {
+                                "type": "integer"
+                              },
+                              "threshold": {
+                                "type": "integer"
+                              },
+                              "stockStatus": {
+                                "type": "string",
+                                "enum": [
+                                  "OUT_OF_STOCK",
+                                  "LOW_STOCK"
+                                ]
+                              },
+                              "categories": {
+                                "type": "string"
+                              },
+                              "authors": {
+                                "type": "string"
+                              },
+                              "unitPrice": {
+                                "type": "integer"
+                              },
+                              "lastSoldDate": {
+                                "type": "string",
+                                "format": "date-time",
+                                "nullable": true
+                              },
+                              "daysSinceLastSold": {
+                                "type": "integer",
+                                "nullable": true
+                              }
+                            }
+                          }
+                        },
+                        "summary": {
+                          "type": "object",
+                          "properties": {
+                            "totalBooksAnalyzed": {
+                              "type": "integer"
+                            },
+                            "outOfStockCount": {
+                              "type": "integer"
+                            },
+                            "lowStockCount": {
+                              "type": "integer"
+                            },
+                            "threshold": {
+                              "type": "integer"
+                            },
+                            "criticalBooks": {
+                              "type": "integer"
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/reports/inventory/movement": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "summary": "Get inventory movement report",
+        "description": "Generate detailed report of inventory movements and stock changes over time",
+        "parameters": [
+          {
+            "name": "startDate",
+            "in": "query",
+            "description": "Start date for movement analysis (YYYY-MM-DD)",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "description": "End date for movement analysis (YYYY-MM-DD)",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "bookId",
+            "in": "query",
+            "description": "Analyze specific book movements",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "categoryId",
+            "in": "query",
+            "description": "Filter by category ID",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Inventory movement report generated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "movementData": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "bookId": {
+                                "type": "integer"
+                              },
+                              "bookName": {
+                                "type": "string"
+                              },
+                              "currentStock": {
+                                "type": "integer"
+                              },
+                              "categories": {
+                                "type": "string"
+                              },
+                              "authors": {
+                                "type": "string"
+                              },
+                              "totalMovements": {
+                                "type": "integer"
+                              },
+                              "totalQuantityMoved": {
+                                "type": "integer"
+                              },
+                              "averageMovementSize": {
+                                "type": "integer"
+                              },
+                              "lastMovementDate": {
+                                "type": "string",
+                                "format": "date-time",
+                                "nullable": true
+                              },
+                              "movements": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "date": {
+                                      "type": "string",
+                                      "format": "date-time"
+                                    },
+                                    "quantity": {
+                                      "type": "integer"
+                                    },
+                                    "orderStatus": {
+                                      "type": "string"
+                                    },
+                                    "unitPrice": {
+                                      "type": "integer"
+                                    },
+                                    "totalPrice": {
+                                      "type": "integer"
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "summary": {
+                          "type": "object",
+                          "properties": {
+                            "totalBooksAnalyzed": {
+                              "type": "integer"
+                            },
+                            "totalMovements": {
+                              "type": "integer"
+                            },
+                            "totalQuantityMoved": {
+                              "type": "integer"
+                            },
+                            "averageMovementPerBook": {
+                              "type": "integer"
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/reports/dashboard": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "summary": "Get dashboard metrics",
+        "description": "Get key business metrics for dashboard display",
+        "responses": {
+          "200": {
+            "description": "Dashboard data retrieved successfully"
+          }
+        }
+      }
+    },
     "/user-management": {
       "get": {
         "tags": [
@@ -2016,189 +2849,23 @@
             "description": "Authentication required"
           }
         }
-      },
-      "post": {
-        "summary": "Create new user",
-        "description": "Create a new user with comprehensive profile information including all custom fields and avatar support",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "tags": [
-          "User Management"
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "required": [
-                  "username",
-                  "email",
-                  "password"
-                ],
-                "properties": {
-                  "username": {
-                    "type": "string",
-                    "minLength": 3,
-                    "description": "Unique username (minimum 3 characters)",
-                    "example": "john_doe"
-                  },
-                  "email": {
-                    "type": "string",
-                    "format": "email",
-                    "description": "User email address",
-                    "example": "john@example.com"
-                  },
-                  "password": {
-                    "type": "string",
-                    "minLength": 6,
-                    "description": "User password (minimum 6 characters)",
-                    "example": "password123"
-                  },
-                  "role": {
-                    "type": "integer",
-                    "description": "Role ID (optional, defaults to authenticated role)",
-                    "example": 1
-                  },
-                  "confirmed": {
-                    "type": "boolean",
-                    "description": "Email confirmation status (optional, defaults to true)",
-                    "example": true
-                  },
-                  "blocked": {
-                    "type": "boolean",
-                    "description": "User blocked status (optional, defaults to false)",
-                    "example": false
-                  },
-                  "date_of_birth": {
-                    "type": "string",
-                    "format": "date",
-                    "description": "Date of birth (optional)",
-                    "example": "1990-01-15"
-                  },
-                  "birthday": {
-                    "type": "string",
-                    "format": "date",
-                    "description": "Birthday (optional)",
-                    "example": "1990-01-15"
-                  },
-                  "address": {
-                    "type": "string",
-                    "description": "Full address (optional)",
-                    "example": "123 Main Street, City, Country"
-                  },
-                  "phone": {
-                    "type": "string",
-                    "description": "Phone number (optional)",
-                    "example": "+1234567890"
-                  },
-                  "facebook": {
-                    "type": "string",
-                    "description": "Facebook profile URL (optional)",
-                    "example": "https://facebook.com/johndoe"
-                  },
-                  "twitter": {
-                    "type": "string",
-                    "description": "Twitter profile URL (optional)",
-                    "example": "https://twitter.com/johndoe"
-                  },
-                  "city": {
-                    "type": "string",
-                    "description": "City (optional)",
-                    "example": "New York"
-                  },
-                  "country": {
-                    "type": "string",
-                    "description": "Country (optional)",
-                    "example": "United States"
-                  },
-                  "gender": {
-                    "type": "string",
-                    "enum": ["male", "female", "other"],
-                    "description": "Gender (optional)",
-                    "example": "male"
-                  },
-                  "avatar": {
-                    "type": "integer",
-                    "description": "Avatar media ID (optional, upload file first to get ID)",
-                    "example": 123
-                  }
-                }
-              }
-            }
-          }
-        },
+      }
+    },
+    "/user-management/profile/{documentId}": {
+      "get": {
         "responses": {
           "200": {
-            "description": "User created successfully with complete profile information",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "allOf": [
-                        {
-                          "$ref": "#/components/schemas/User"
-                        },
-                        {
-                          "type": "object",
-                          "properties": {
-                            "role": {
-                              "type": "object",
-                              "properties": {
-                                "id": {
-                                  "type": "integer",
-                                  "example": 1
-                                },
-                                "documentId": {
-                                  "type": "string",
-                                  "example": "zief58ukflhaf8dw1firc128"
-                                },
-                                "name": {
-                                  "type": "string",
-                                  "example": "Authenticated"
-                                },
-                                "type": {
-                                  "type": "string",
-                                  "example": "authenticated"
-                                },
-                                "description": {
-                                  "type": "string",
-                                  "example": "Default role given to authenticated user."
-                                }
-                              },
-                              "description": "Complete user role information"
-                            },
-                            "avatar": {
-                              "oneOf": [
-                                {
-                                  "type": "null"
-                                },
-                                {
-                                  "$ref": "#/components/schemas/UploadFile"
-                                }
-                              ],
-                              "description": "User avatar image (null if not set)"
-                            }
-                          }
-                        }
-                      ]
-                    },
-                    "message": {
-                      "type": "string",
-                      "example": "User created successfully"
-                    }
-                  }
+                  "$ref": "#/components/schemas/UserManagementResponse"
                 }
               }
             }
           },
           "400": {
-            "description": "Bad Request - validation errors or duplicate username/email",
+            "description": "Bad Request",
             "content": {
               "application/json": {
                 "schema": {
@@ -2208,7 +2875,7 @@
             }
           },
           "401": {
-            "description": "Unauthorized - authentication required",
+            "description": "Unauthorized",
             "content": {
               "application/json": {
                 "schema": {
@@ -2218,7 +2885,27 @@
             }
           },
           "403": {
-            "description": "Forbidden - insufficient permissions",
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
             "content": {
               "application/json": {
                 "schema": {
@@ -2227,7 +2914,94 @@
               }
             }
           }
-        }
+        },
+        "tags": [
+          "User-management"
+        ],
+        "parameters": [
+          {
+            "name": "documentId",
+            "in": "path",
+            "description": "",
+            "deprecated": false,
+            "required": true,
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "operationId": "get/user-management/profile/{documentId}"
+      }
+    },
+    "/user-management/me": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserManagementResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "User-management"
+        ],
+        "parameters": [],
+        "operationId": "get/user-management/me"
       }
     },
     "/upload": {
@@ -2438,12 +3212,12 @@
                   "identifier": {
                     "type": "string",
                     "description": "Email or username",
-                    "example": "admin"
+                    "example": "user@example.com"
                   },
                   "password": {
                     "type": "string",
                     "description": "User password",
-                    "example": "adminPass123"
+                    "example": "password123"
                   }
                 }
               }
@@ -3195,6 +3969,212 @@
                       ]
                     }
                   }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users": {
+      "post": {
+        "tags": [
+          "User Management"
+        ],
+        "summary": "Create a new user",
+        "description": "Create a new user with comprehensive profile information. Only username, email, and password are required.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "username",
+                  "email",
+                  "password"
+                ],
+                "properties": {
+                  "username": {
+                    "type": "string",
+                    "minLength": 3,
+                    "description": "Unique username (required)",
+                    "example": "john_doe"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "description": "User email address (required)",
+                    "example": "john@example.com"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 6,
+                    "description": "User password (required, minimum 6 characters)",
+                    "example": "SecurePass123"
+                  },
+                  "date_of_birth": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "Date of birth (optional)",
+                    "example": "1990-01-15"
+                  },
+                  "address": {
+                    "type": "string",
+                    "description": "Full address (optional)",
+                    "example": "123 Nguyen Hue Street, District 1"
+                  },
+                  "phone": {
+                    "type": "string",
+                    "description": "Phone number (optional)",
+                    "example": "+84901234567"
+                  },
+                  "facebook": {
+                    "type": "string",
+                    "description": "Facebook profile URL (optional)",
+                    "example": "https://facebook.com/johndoe"
+                  },
+                  "twitter": {
+                    "type": "string",
+                    "description": "Twitter profile URL (optional)",
+                    "example": "https://twitter.com/johndoe"
+                  },
+                  "city": {
+                    "type": "string",
+                    "description": "City (optional)",
+                    "example": "Ho Chi Minh City"
+                  },
+                  "country": {
+                    "type": "string",
+                    "description": "Country (optional)",
+                    "example": "Vietnam"
+                  },
+                  "gender": {
+                    "type": "string",
+                    "enum": [
+                      "male",
+                      "female",
+                      "other"
+                    ],
+                    "description": "Gender (optional)",
+                    "example": "male"
+                  }
+                }
+              },
+              "examples": {
+                "minimal-user": {
+                  "summary": "Minimal user creation (required fields only)",
+                  "value": {
+                    "username": "john_doe",
+                    "email": "john@example.com",
+                    "password": "SecurePass123"
+                  }
+                },
+                "complete-user": {
+                  "summary": "Complete user profile",
+                  "value": {
+                    "username": "jane_smith",
+                    "email": "jane@example.com",
+                    "password": "SecurePass123",
+                    "date_of_birth": "1992-05-20",
+                    "address": "456 Le Loi Street, District 3",
+                    "phone": "+84987654321",
+                    "facebook": "https://facebook.com/janesmith",
+                    "twitter": "https://twitter.com/janesmith",
+                    "city": "Ho Chi Minh City",
+                    "country": "Vietnam",
+                    "gender": "female"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/User"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "User created successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - validation errors",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "type": "string",
+                          "example": "Username already taken"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          }
+        }
+      }
+    },
+    "/users/me": {
+      "get": {
+        "tags": [
+          "Users-Permissions - Users & Roles"
+        ],
+        "summary": "Get authenticated user info",
+        "responses": {
+          "200": {
+            "description": "Returns user info",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Users-Permissions-User"
+                },
+                "example": {
+                  "id": 1,
+                  "username": "foo",
+                  "email": "foo@strapi.io",
+                  "provider": "local",
+                  "confirmed": false,
+                  "blocked": false,
+                  "createdAt": "2022-05-19T17:35:35.096Z",
+                  "updatedAt": "2022-05-19T17:35:35.096Z"
                 }
               }
             }
@@ -4528,8 +5508,8 @@
         "operationId": "delete/orders/{id}"
       }
     },
-    "/user-management/me": {
-      "get": {
+    "/user-management/{documentId}": {
+      "put": {
         "responses": {
           "200": {
             "description": "OK",
@@ -4593,261 +5573,33 @@
           }
         },
         "tags": [
-          "User Management"
-        ],
-        "parameters": [],
-        "operationId": "get/user-management/me"
-      }
-    },
-    "/user-management/{id}": {
-      "put": {
-        "summary": "Update user by ID or documentId",
-        "description": "Update user information with comprehensive profile data including all custom fields and avatar support. Supports both numeric ID and documentId.",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "tags": [
-          "User Management"
+          "User-management"
         ],
         "parameters": [
           {
-            "name": "id",
+            "name": "documentId",
             "in": "path",
-            "description": "User ID (number) or documentId (24-character alphanumeric string) for user identification",
+            "description": "Document ID (alphanumeric string) - required for update/delete operations in Strapi v5",
+            "deprecated": false,
             "required": true,
             "schema": {
-              "oneOf": [
-                {
-                  "type": "integer",
-                  "example": 14
-                },
-                {
-                  "type": "string",
-                  "pattern": "^[a-z0-9]{24}$",
-                  "example": "sg2vjc0k00ktz6n38fpn0b64"
-                }
-              ]
+              "type": "string",
+              "pattern": "^[a-z0-9]{24}$",
+              "example": "o9m182bqf02l0zjrq8weqfwz"
             }
           }
         ],
+        "operationId": "put/user-management/{id}",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "username": {
-                    "type": "string",
-                    "minLength": 3,
-                    "description": "Unique username (minimum 3 characters)",
-                    "example": "john_doe_updated"
-                  },
-                  "email": {
-                    "type": "string",
-                    "format": "email",
-                    "description": "User email address",
-                    "example": "john.updated@example.com"
-                  },
-                  "password": {
-                    "type": "string",
-                    "minLength": 6,
-                    "description": "User password (minimum 6 characters)",
-                    "example": "newpassword123"
-                  },
-                  "role": {
-                    "type": "integer",
-                    "description": "Role ID",
-                    "example": 1
-                  },
-                  "confirmed": {
-                    "type": "boolean",
-                    "description": "Email confirmation status",
-                    "example": true
-                  },
-                  "blocked": {
-                    "type": "boolean",
-                    "description": "User blocked status",
-                    "example": false
-                  },
-                  "date_of_birth": {
-                    "type": "string",
-                    "format": "date",
-                    "description": "Date of birth",
-                    "example": "1990-01-15"
-                  },
-                  "birthday": {
-                    "type": "string",
-                    "format": "date",
-                    "description": "Birthday",
-                    "example": "1990-01-15"
-                  },
-                  "address": {
-                    "type": "string",
-                    "description": "Full address",
-                    "example": "456 Updated Street, New City, Country"
-                  },
-                  "phone": {
-                    "type": "string",
-                    "description": "Phone number",
-                    "example": "+1987654321"
-                  },
-                  "facebook": {
-                    "type": "string",
-                    "description": "Facebook profile URL",
-                    "example": "https://facebook.com/johndoe.updated"
-                  },
-                  "twitter": {
-                    "type": "string",
-                    "description": "Twitter profile URL",
-                    "example": "https://twitter.com/johndoe.updated"
-                  },
-                  "city": {
-                    "type": "string",
-                    "description": "City",
-                    "example": "Los Angeles"
-                  },
-                  "country": {
-                    "type": "string",
-                    "description": "Country",
-                    "example": "United States"
-                  },
-                  "gender": {
-                    "type": "string",
-                    "enum": ["male", "female", "other"],
-                    "description": "Gender",
-                    "example": "female"
-                  },
-                  "avatar": {
-                    "type": "integer",
-                    "description": "Avatar media ID (upload file first to get ID)",
-                    "example": 456
-                  }
-                }
+                "$ref": "#/components/schemas/UserManagementRequest"
               }
             }
           }
-        },
-        "responses": {
-          "200": {
-            "description": "User updated successfully with complete profile information",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "allOf": [
-                        {
-                          "$ref": "#/components/schemas/User"
-                        },
-                        {
-                          "type": "object",
-                          "properties": {
-                            "role": {
-                              "type": "object",
-                              "properties": {
-                                "id": {
-                                  "type": "integer",
-                                  "example": 1
-                                },
-                                "documentId": {
-                                  "type": "string",
-                                  "example": "zief58ukflhaf8dw1firc128"
-                                },
-                                "name": {
-                                  "type": "string",
-                                  "example": "Authenticated"
-                                },
-                                "type": {
-                                  "type": "string",
-                                  "example": "authenticated"
-                                },
-                                "description": {
-                                  "type": "string",
-                                  "example": "Default role given to authenticated user."
-                                }
-                              },
-                              "description": "Complete user role information"
-                            },
-                            "avatar": {
-                              "oneOf": [
-                                {
-                                  "type": "null"
-                                },
-                                {
-                                  "$ref": "#/components/schemas/UploadFile"
-                                }
-                              ],
-                              "description": "User avatar image (null if not set)"
-                            }
-                          }
-                        }
-                      ]
-                    },
-                    "message": {
-                      "type": "string",
-                      "example": "User updated successfully"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        },
-        "operationId": "put/user-management/{id}"
+        }
       },
       "delete": {
         "responses": {
@@ -4914,7 +5666,7 @@
           }
         },
         "tags": [
-          "User Management"
+          "User-management"
         ],
         "parameters": [
           {
@@ -5682,6 +6434,249 @@
           },
           "403": {
             "description": "You can only view your own stats"
+          },
+          "404": {
+            "description": "User not found"
+          }
+        }
+      }
+    },
+    "/user-delete/{id}": {
+      "delete": {
+        "tags": [
+          "User Management"
+        ],
+        "summary": "Delete a user",
+        "description": "Delete a user by documentId. Users can delete their own account or admins can delete any user.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "User documentId (24-character alphanumeric string)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "integer"
+                        },
+                        "documentId": {
+                          "type": "string"
+                        },
+                        "username": {
+                          "type": "string"
+                        },
+                        "email": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "User deleted successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - Can only delete own account or must be admin"
+          },
+          "404": {
+            "description": "User not found"
+          }
+        }
+      }
+    },
+    "/users/{id}": {
+      "put": {
+        "tags": [
+          "User Management"
+        ],
+        "summary": "Update user information",
+        "description": "Update user profile with comprehensive information. All fields are optional for updates. **Important:** Use documentId (24-character string) for the id parameter, not numeric ID.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z0-9]{24}$",
+              "example": "pd6qqd1cix4pyhai5ya8xz7y"
+            },
+            "description": "User documentId (24-character alphanumeric string, not integer ID)"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "username": {
+                    "type": "string",
+                    "minLength": 3,
+                    "description": "Update username (optional)",
+                    "example": "new_username"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "description": "Update email address (optional)",
+                    "example": "newemail@example.com"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 6,
+                    "description": "Update password (optional)",
+                    "example": "NewSecurePass123"
+                  },
+                  "date_of_birth": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "Update date of birth (optional)",
+                    "example": "1990-01-15"
+                  },
+                  "address": {
+                    "type": "string",
+                    "description": "Update address (optional)",
+                    "example": "789 Dong Khoi Street, District 1"
+                  },
+                  "phone": {
+                    "type": "string",
+                    "description": "Update phone number (optional)",
+                    "example": "+84912345678"
+                  },
+                  "facebook": {
+                    "type": "string",
+                    "description": "Update Facebook profile URL (optional)",
+                    "example": "https://facebook.com/newprofile"
+                  },
+                  "twitter": {
+                    "type": "string",
+                    "description": "Update Twitter profile URL (optional)",
+                    "example": "https://twitter.com/newprofile"
+                  },
+                  "city": {
+                    "type": "string",
+                    "description": "Update city (optional)",
+                    "example": "Hanoi"
+                  },
+                  "country": {
+                    "type": "string",
+                    "description": "Update country (optional)",
+                    "example": "Vietnam"
+                  },
+                  "gender": {
+                    "type": "string",
+                    "enum": [
+                      "male",
+                      "female",
+                      "other"
+                    ],
+                    "description": "Update gender (optional)",
+                    "example": "other"
+                  }
+                }
+              },
+              "examples": {
+                "update-profile": {
+                  "summary": "Update profile information",
+                  "value": {
+                    "phone": "+84912345678",
+                    "city": "Hanoi",
+                    "address": "789 Dong Khoi Street, District 1"
+                  }
+                },
+                "update-credentials": {
+                  "summary": "Update username and email",
+                  "value": {
+                    "username": "new_username",
+                    "email": "newemail@example.com"
+                  }
+                },
+                "update-password": {
+                  "summary": "Update password only",
+                  "value": {
+                    "password": "NewSecurePass123"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/User"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "User updated successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - validation errors",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "type": "string",
+                          "example": "Email already taken"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
           },
           "404": {
             "description": "User not found"
@@ -12988,6 +13983,418 @@
         "properties": {
           "data": {
             "$ref": "#/components/schemas/Order"
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "Report": {
+        "type": "object",
+        "required": [
+          "name",
+          "type"
+        ],
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "documentId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "revenue",
+              "inventory",
+              "dashboard"
+            ]
+          },
+          "data": {},
+          "generated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "publishedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "number"
+              },
+              "documentId": {
+                "type": "string"
+              },
+              "firstname": {
+                "type": "string"
+              },
+              "lastname": {
+                "type": "string"
+              },
+              "username": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string",
+                "format": "email"
+              },
+              "resetPasswordToken": {
+                "type": "string"
+              },
+              "registrationToken": {
+                "type": "string"
+              },
+              "isActive": {
+                "type": "boolean"
+              },
+              "roles": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "number"
+                    },
+                    "documentId": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "code": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string"
+                    },
+                    "users": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "number"
+                          },
+                          "documentId": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "permissions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "number"
+                          },
+                          "documentId": {
+                            "type": "string"
+                          },
+                          "action": {
+                            "type": "string"
+                          },
+                          "actionParameters": {},
+                          "subject": {
+                            "type": "string"
+                          },
+                          "properties": {},
+                          "conditions": {},
+                          "role": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "number"
+                              },
+                              "documentId": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "updatedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "publishedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "createdBy": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "number"
+                              },
+                              "documentId": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "updatedBy": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "number"
+                              },
+                              "documentId": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "locale": {
+                            "type": "string"
+                          },
+                          "localizations": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "number"
+                                },
+                                "documentId": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "publishedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "createdBy": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "number"
+                        },
+                        "documentId": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "updatedBy": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "number"
+                        },
+                        "documentId": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "locale": {
+                      "type": "string"
+                    },
+                    "localizations": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "number"
+                          },
+                          "documentId": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "blocked": {
+                "type": "boolean"
+              },
+              "preferedLanguage": {
+                "type": "string"
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updatedAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "publishedAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "createdBy": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "number"
+                  },
+                  "documentId": {
+                    "type": "string"
+                  }
+                }
+              },
+              "updatedBy": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "number"
+                  },
+                  "documentId": {
+                    "type": "string"
+                  }
+                }
+              },
+              "locale": {
+                "type": "string"
+              },
+              "localizations": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "number"
+                    },
+                    "documentId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "updatedBy": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "number"
+              },
+              "documentId": {
+                "type": "string"
+              }
+            }
+          },
+          "locale": {
+            "type": "string"
+          },
+          "localizations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "number"
+                },
+                "documentId": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "revenue",
+                    "inventory",
+                    "dashboard"
+                  ]
+                },
+                "data": {},
+                "generated_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "updatedAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "publishedAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "createdBy": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "number"
+                    },
+                    "documentId": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "updatedBy": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "number"
+                    },
+                    "documentId": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "locale": {
+                  "type": "string"
+                },
+                "localizations": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "number"
+                      },
+                      "documentId": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "ReportResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Report"
           },
           "meta": {
             "type": "object"

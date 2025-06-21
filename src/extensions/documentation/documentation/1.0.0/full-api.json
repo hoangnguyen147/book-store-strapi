@@ -3,12 +3,35 @@
   "info": {
     "version": "1.0.0",
     "title": "Book Store API",
-    "description": "Complete API documentation for Book Store application"
+    "description": "API documentation for Book Store application with comprehensive book management, user authentication, and advanced search capabilities.\n\n**Important Note for Strapi v5:**\n- For GET requests: You can use either `id` (number) or `documentId` (24-char alphanumeric string)\n- For PUT/DELETE requests: You MUST use `documentId` (24-char alphanumeric string)\n- Example: GET /api/categories/133 OR /api/categories/o9m182bqf02l0zjrq8weqfwz\n- Example: PUT /api/categories/o9m182bqf02l0zjrq8weqfwz (documentId required)",
+    "termsOfService": "https://bookstore.com/terms",
+    "contact": {
+      "name": "Book Store Team",
+      "email": "contact@bookstore.com",
+      "url": "https://bookstore.com"
+    },
+    "license": {
+      "name": "MIT",
+      "url": "https://opensource.org/licenses/MIT"
+    }
   },
   "servers": [
     {
       "url": "http://localhost:1337/api",
       "description": "Development server"
+    },
+    {
+      "url": "https://calm-health-1bc6166fbc.strapiapp.com/api",
+      "description": "Production server"
+    }
+  ],
+  "externalDocs": {
+    "description": "Find out more about Strapi",
+    "url": "https://docs.strapi.io/developer-docs/latest/getting-started/introduction.html"
+  },
+  "security": [
+    {
+      "bearerAuth": []
     }
   ],
   "paths": {
